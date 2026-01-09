@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ai-todo-app.fullname" . }}-database
+  labels:
+    {{- include "ai-todo-app.labels" . | nindent 4 }}
+    app: database
+spec:
+  type: {{ .Values.backend.service.type }}
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    {{- include "ai-todo-app.selectorLabels" . | nindent 4 }}
+    app: database

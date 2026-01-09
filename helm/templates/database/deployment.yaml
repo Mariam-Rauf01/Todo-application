@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-todo-app.fullname" . }}-database
+  labels:
+    {{- include "ai-todo-app.labels" . | nindent 4 }}
+    app: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ai-todo-app.selectorLabels" . | nindent 6 }}
+      app: database
+  template:
+    metadata:
+      labels:
+        {{- include "ai-todo-app.selectorLabels" . | nindent 8 }}
+        app: database
+    spec:
+      containers:
+        - name: postgres
+          image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+          imagePullPolicy: {{ .Values.database.image.pullPolicy }}
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.database.postgresql.postgresqlDatabase }}
+            - name: POSTGRES_USER
+              value: {{ .Values.database.postgresql.postgresqlUsername }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+          resources:
+            {{- toYaml .Values.database.resources | nindent 12 }}
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: {{ include "ai-todo-app.fullname" . }}-postgres-pvc

@@ -1,0 +1,26 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Sample Task",
+      "description": "This is a sample task to demonstrate the application",
+      "status": "pending",
+      "created_at": "2025-12-31T10:30:00.123456"
+    },
+    {
+      "id": 2,
+      "title": "Complete Project",
+      "description": "Finish the console todo application project",
+      "status": "completed",
+      "created_at": "2025-12-31T10:31:00.123456"
+    },
+    {
+      "id": 3,
+      "title": "biryanii",
+      "description": "biryani is my fovrt",
+      "status": "pending",
+      "created_at": "2026-01-01T00:57:30.547301"
+    }
+  ],
+  "next_id": 4
+}

@@ -1,0 +1,41 @@
+version: 3
+services:
+  - name: todo-backend
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    env:
+      - DATABASE_URL=postgresql://postgres:postgres@localhost/todo_app
+      - SECRET_KEY=your-super-secret-key-change-in-production
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    ports:
+      - 8000
+    app-id: todo-backend
+    app-port: 8000
+    components-path: ./cloud/dapr/components
+    config-file: ./cloud/dapr/config.yaml
+    log-level: info
+    enable-profiling: true
+    profile-port: 7777
+    metrics-port: 9090
+    max-concurrency: 10
+    command-args: []
+    app-protocol: http
+    app-max-concurrency: 10
+    app-ssl: false
+    enable-app-health-check: true
+    app-health-check-path: /health
+    app-health-probe-interval: 5
+    app-health-probe-timeout: 2
+    app-health-threshold: 3
+    placement-host-address: localhost:50005
+    sentry-address: localhost:50001
+    log-as-json: false
+    graceful-shutdown-seconds: 5
+    config:
+      - name: daprConfig
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"

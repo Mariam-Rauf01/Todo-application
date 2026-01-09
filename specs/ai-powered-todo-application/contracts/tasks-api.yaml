@@ -1,0 +1,151 @@
+# API Contracts: AI-Powered Todo Application
+
+## Authentication APIs
+
+### POST /api/auth/signup
+**Description**: Register a new user account
+
+**Request**:
+```json
+{
+  "email": "user@example.com",
+  "password": "securePassword123",
+  "name": "John Doe"
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "id": "user-uuid",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "created_at": "2025-12-31T10:00:00Z"
+}
+```
+
+### POST /api/auth/login
+**Description**: Authenticate user and return session token
+
+**Request**:
+```json
+{
+  "email": "user@example.com",
+  "password": "securePassword123"
+}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "access_token": "jwt-token",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": "user-uuid",
+    "email": "user@example.com",
+    "name": "John Doe"
+  }
+}
+```
+
+## Task APIs
+
+### GET /api/tasks
+**Description**: List all tasks for authenticated user
+
+**Headers**:
+- Authorization: Bearer {token}
+
+**Response (200 OK)**:
+```json
+{
+  "tasks": [
+    {
+      "id": "task-uuid",
+      "title": "Buy groceries",
+      "description": "Milk, bread, eggs",
+      "status": "pending",
+      "created_at": "2025-12-31T10:00:00Z",
+      "updated_at": "2025-12-31T10:00:00Z",
+      "due_date": null,
+      "priority": "medium",
+      "category": null
+    }
+  ]
+}
+```
+
+### POST /api/tasks
+**Description**: Create a new task
+
+**Headers**:
+- Authorization: Bearer {token}
+
+**Request**:
+```json
+{
+  "title": "Buy groceries",
+  "description": "Milk, bread, eggs",
+  "due_date": "2025-12-31T23:59:59Z",
+  "priority": "medium",
+  "category": "personal"
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "id": "task-uuid",
+  "title": "Buy groceries",
+  "description": "Milk, bread, eggs",
+  "status": "pending",
+  "created_at": "2025-12-31T10:00:00Z",
+  "updated_at": "2025-12-31T10:00:00Z",
+  "due_date": "2025-12-31T23:59:59Z",
+  "priority": "medium",
+  "category": "personal"
+}
+```
+
+### PUT /api/tasks/{id}
+**Description**: Update an existing task
+
+**Headers**:
+- Authorization: Bearer {token}
+
+**Request**:
+```json
+{
+  "title": "Buy groceries",
+  "description": "Milk, bread, eggs, cheese",
+  "status": "completed",
+  "due_date": "2025-12-31T23:59:59Z",
+  "priority": "high",
+  "category": "personal"
+}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "id": "task-uuid",
+  "title": "Buy groceries",
+  "description": "Milk, bread, eggs, cheese",
+  "status": "completed",
+  "created_at": "2025-12-31T10:00:00Z",
+  "updated_at": "2025-12-31T11:00:00Z",
+  "due_date": "2025-12-31T23:59:59Z",
+  "priority": "high",
+  "category": "personal"
+}
+```
+
+### DELETE /api/tasks/{id}
+**Description**: Delete a task
+
+**Headers**:
+- Authorization: Bearer {token}
+
+**Response (204 No Content)**:
+```
