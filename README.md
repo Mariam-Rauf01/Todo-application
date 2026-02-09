@@ -249,3 +249,24 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📞 Support
 
 If you encounter any issues or have questions, please open an issue in the repository.
+
+## Database Configuration with Neon PostgreSQL
+
+This project is configured to connect to a PostgreSQL database hosted on Neon with the following connection string:
+
+```
+postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+```
+
+The database connection is configured in:
+
+- `config.py` - Contains the database connection string
+- `db_connection.py` - Basic database connection implementation
+- `db_utils.py` - Advanced database utilities with connection pooling
+- `test_db_connection.py` - Test script to verify the database connection
+
+To test the database connection, run:
+
+```
+python test_db_connection.py
+```

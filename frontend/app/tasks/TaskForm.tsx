@@ -26,20 +26,20 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
+    // For demo purposes, skip authentication check
+    // const token = localStorage.getItem('access_token');
+    // if (!token) {
+    //   router.push('/login');
+    //   return;
+    // }
 
+    try {
       const taskData = {
         title,
         description: description || null,
         due_date: dueDate || null,
         priority,
         category: category || null,
-        recurrence_pattern: null,
       };
 
       let response;
@@ -49,7 +49,6 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify(taskData),
         });
@@ -59,7 +58,6 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify(taskData),
         });
@@ -68,9 +66,6 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
       if (response.ok) {
         router.push('/tasks');
         router.refresh();
-      } else if (response.status === 401) {
-        // Unauthorized - redirect to login
-        router.push('/login');
       } else {
         const errorData = await response.json();
         setError(errorData.detail || 'Failed to save task');

@@ -1,52 +1,105 @@
 import { cookies } from 'next/headers';
+import { NextRequest } from 'next/server';
+import jwt from 'jsonwebtoken';
 
-// Server-side authentication check
-export const isAuthenticated = (): boolean => {
-  const cookieStore = cookies();
-  const token = cookieStore.get('access_token')?.value;
-  return token !== undefined && token !== '';
-};
+// Must match the backend's SECRET_KEY
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// Get token server-side
-export const getTokenServer = (): string | undefined => {
-  const cookieStore = cookies();
-  return cookieStore.get('access_token')?.value;
-};
+export interface AuthResult {
+  success: boolean;
+  userId?: number;
+  email?: string;
+  error?: string;
+}
 
-// Verify token (demo implementation - accepts any token)
-export const verifyToken = (token: string): boolean => {
-  // For demo purposes, accept any non-empty token
-  return Boolean(token && token.length > 0);
-};
-
-// Verify token from request (for API routes)
-export const verifyTokenFromRequest = async (request: any): Promise<{ success: boolean; token?: string }> => {
+/**
+ * Verifies the authentication token from the request
+ * @param request - The Next.js API request object
+ * @returns Promise<AuthResult> - Result of the authentication verification
+ */
+export async function verifyTokenFromRequest(request: NextRequest): Promise<AuthResult> {
   try {
-    // Get token from Authorization header or cookies
-    const authHeader = request.headers.get('authorization');
-    let token: string | undefined;
+    // Try to get token from Authorization header first
+    const authHeader = request.headers.get('Authorization');
+    let token = null;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7);
+      console.log('Token found in Authorization header');
     } else {
-      // Try to get from cookies
-      const cookieHeader = request.headers.get('cookie');
-      if (cookieHeader) {
-        const cookies = cookieHeader.split(';').reduce((acc: any, cookie: string) => {
-          const [key, value] = cookie.trim().split('=');
-          acc[key] = value;
-          return acc;
-        }, {});
-        token = cookies.access_token;
+      // Fallback to cookie
+      const cookieStore = cookies();
+      token = cookieStore.get('auth-token')?.value;
+      if (token) {
+        console.log('Token found in cookie');
       }
     }
 
-    if (token && verifyToken(token)) {
-      return { success: true, token };
+    if (!token) {
+      console.log('No token found in header or cookies');
+      return {
+        success: false,
+        error: 'Authentication token missing'
+      };
     }
 
-    return { success: false };
+    // Verify the token
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string };
+      
+      console.log('✅ Token verified successfully for user ID:', decoded.userId);
+      console.log('JWT_SECRET used:', JWT_SECRET);
+      
+      return {
+        success: true,
+        userId: decoded.userId,
+        email: decoded.email
+      };
+    } catch (verifyError: any) {
+      console.error('❌ Token verification failed:', verifyError.message);
+      console.error('JWT_SECRET:', JWT_SECRET);
+      return {
+        success: false,
+        error: 'Invalid or expired token'
+      };
+    }
   } catch (error) {
-    return { success: false };
+    console.error('Authentication error:', error);
+    return {
+      success: false,
+      error: 'Authentication failed'
+    };
   }
-};
+}
+
+/**
+ * Helper function to get the current user from the request
+ * @param request - The Next.js API request object
+ * @returns Promise<AuthResult> - Result containing user info if authenticated
+ */
+export async function getCurrentUser(request: NextRequest): Promise<AuthResult> {
+  return await verifyTokenFromRequest(request);
+}
+
+/**
+ * Synchronous function to check if user is authenticated (for server components)
+ * @returns boolean - Whether the user is authenticated
+ */
+export function isAuthenticated(): boolean {
+  try {
+    // Access cookies in a server component
+    const cookieStore = cookies();
+    const token = cookieStore.get('auth-token')?.value;
+    
+    if (!token) {
+      return false;
+    }
+
+    // Verify the token synchronously
+    jwt.verify(token, JWT_SECRET);
+    return true;
+  } catch (error) {
+    console.error('Error checking authentication status:', error);
+    return false;
+  }
+}

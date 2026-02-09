@@ -11,6 +11,7 @@ export interface DemoTask {
   due_date?: string | null;
   priority?: string;
   category?: string | null;
+  recurrence_pattern?: string | null;
 }
 
 // Shared demo tasks storage

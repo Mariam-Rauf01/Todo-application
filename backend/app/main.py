@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from . import auth, tasks
+from . import auth, tasks, chatbot
 from .database import engine, Base
 
 # Create database tables
@@ -30,6 +30,7 @@ app.add_middleware(
 # Include API routes
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
+app.include_router(chatbot.router, prefix="/api/chatbot", tags=["chatbot"])
 
 @app.get("/")
 def read_root():

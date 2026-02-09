@@ -10,6 +10,7 @@ from .events import Event, EventType
 
 # Kafka service will be imported later to avoid circular import
 kafka_service = None
+
 from .recurrence import calculate_next_occurrence, create_next_occurrence_task, RecurrencePattern
 from .notifications import service as notification_service
 
@@ -182,130 +183,21 @@ def update_task(
             detail="Task not found"
         )
 
-    # Store original values for the event
-    original_data = {
-        "title": task.title,
-        "description": task.description,
-        "status": task.status,
-        "due_date": task.due_date.isoformat() if task.due_date else None,
-        "priority": task.priority,
-        "category": task.category,
-        "recurrence_pattern": task.recurrence_pattern,
-        "recurrence_end_date": task.recurrence_end_date.isoformat() if task.recurrence_end_date else None,
-        "recurrence_interval": task.recurrence_interval,
-        "parent_task_id": task.parent_task_id,
-        "next_occurrence": task.next_occurrence.isoformat() if task.next_occurrence else None
-    }
+    # Update task fields, only allowing valid model fields
+    update_data = task_update.dict(exclude_unset=True)
+    allowed_fields = [
+        'title', 'description', 'status', 'due_date', 'priority',
+        'category', 'recurrence_pattern', 'recurrence_end_date',
+        'recurrence_interval', 'parent_task_id', 'next_occurrence'
+    ]
 
-    # Update task fields
-    for field, value in task_update.dict(exclude_unset=True).items():
-        setattr(task, field, value)
-
-    # If the task is completed and has a recurrence pattern, create the next occurrence
-    if (task_update.status == "completed" and task.recurrence_pattern and
-        task.next_occurrence and not task.parent_task_id):  # Only for original recurring tasks
-        next_occurrence = calculate_next_occurrence(
-            current_date=task.next_occurrence,
-            pattern=RecurrencePattern(task.recurrence_pattern),
-            interval=task.recurrence_interval,
-            end_date=task.recurrence_end_date
-        )
-
-        if next_occurrence:
-            # Create the next occurrence task
-            next_task_data = create_next_occurrence_task(
-                original_task_data={
-                    "title": task.title,
-                    "description": task.description,
-                    "status": "pending",
-                    "due_date": next_occurrence,
-                    "priority": task.priority,
-                    "category": task.category,
-                    "recurrence_pattern": task.recurrence_pattern,
-                    "recurrence_end_date": task.recurrence_end_date,
-                    "recurrence_interval": task.recurrence_interval,
-                    "parent_task_id": task.id
-                },
-                next_occurrence_date=next_occurrence
-            )
-
-            next_task = models.Task(
-                title=next_task_data["title"],
-                description=next_task_data["description"],
-                status=next_task_data["status"],
-                user_id=task.user_id,
-                due_date=next_task_data["due_date"],
-                priority=next_task_data["priority"],
-                category=next_task_data["category"],
-                recurrence_pattern=next_task_data["recurrence_pattern"],
-                recurrence_end_date=next_task_data["recurrence_end_date"],
-                recurrence_interval=next_task_data["recurrence_interval"],
-                parent_task_id=next_task_data["parent_task_id"]
-            )
-
-            db.add(next_task)
-            db.commit()
-            db.refresh(next_task)
-
-            # Update the original task's next occurrence
-            task.next_occurrence = next_occurrence
-            db.commit()
-
-            logger.info(f"Created next occurrence task {next_task.id} for recurring task {task.id}")
-
-    # If due date is updated, reschedule notifications
-    if task_update.due_date is not None:
-        # Cancel existing due date notifications and schedule new ones
-        notification_service.schedule_task_due_notifications(db, task, current_user.id)
-
-    # If status is updated to completed, mark any related notifications as read
-    if task_update.status == "completed":
-        # Find and mark related notifications as read
-        from .notifications.models import Notification, NotificationStatus
-        related_notifications = db.query(Notification).filter(
-            Notification.task_id == task.id,
-            Notification.user_id == current_user.id
-        ).all()
-
-        for notification in related_notifications:
-            if notification.status != NotificationStatus.READ:
-                notification.status = NotificationStatus.READ
-                notification.read_at = datetime.utcnow()
-
-        db.commit()
+    for field, value in update_data.items():
+        if field in allowed_fields:
+            setattr(task, field, value)
 
     task.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(task)
-
-    # Publish task updated event to Kafka
-    try:
-        if kafka_service:
-            event = Event(
-                event_type=EventType.TASK_UPDATED,
-                user_id=current_user.id,
-                entity_id=task.id,
-                entity_data={
-                    "title": task.title,
-                    "description": task.description,
-                    "status": task.status,
-                    "due_date": task.due_date.isoformat() if task.due_date else None,
-                    "priority": task.priority,
-                    "category": task.category,
-                    "recurrence_pattern": task.recurrence_pattern,
-                    "recurrence_end_date": task.recurrence_end_date.isoformat() if task.recurrence_end_date else None,
-                    "recurrence_interval": task.recurrence_interval,
-                    "parent_task_id": task.parent_task_id,
-                    "next_occurrence": task.next_occurrence.isoformat() if task.next_occurrence else None
-                },
-                metadata={
-                    "previous_data": original_data
-                }
-            )
-            kafka_service.send_message("task_events", event.dict())
-            logger.info(f"Published task updated event for task ID: {task.id}")
-    except Exception as e:
-        logger.error(f"Failed to publish task updated event: {e}")
 
     return task
 

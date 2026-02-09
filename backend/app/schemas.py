@@ -35,8 +35,18 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     pass
 
-class TaskUpdate(TaskBase):
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
     status: Optional[str] = None
+    due_date: Optional[datetime] = None
+    priority: Optional[str] = None
+    category: Optional[str] = None
+    recurrence_pattern: Optional[str] = None  # daily, weekly, monthly, yearly
+    recurrence_end_date: Optional[datetime] = None
+    recurrence_interval: Optional[int] = None
+    parent_task_id: Optional[int] = None
+    next_occurrence: Optional[datetime] = None
 
 class Task(TaskBase):
     id: int

@@ -238,43 +238,108 @@ async def chat_with_bot(
 
         if intent == "create_task":
             params = parsed_command["params"]
-            response_text = f"I'll create a task for you: '{params['title']}'"
+            
+            # Create the task in the database
+            new_task = models.Task(
+                title=params['title'],
+                description=params.get('description') or '',
+                status='pending',
+                priority=params.get('priority', 'medium'),
+                category=params.get('category'),
+                due_date=params.get('due_date'),
+                user_id=current_user.id
+            )
+            db.add(new_task)
+            db.commit()
+            db.refresh(new_task)
+            
+            response_text = f"✅ Task created successfully: '{params['title']}'"
             action = {
                 "type": "create_task",
-                "data": params
+                "data": {
+                    "id": new_task.id,
+                    "title": new_task.title
+                }
             }
         elif intent == "list_tasks":
             params = parsed_command["params"]
-            filters = []
+            
+            # Build query with filters
+            query = db.query(models.Task).filter(models.Task.user_id == current_user.id)
+            
             if params.get("status_filter"):
-                filters.append(f"status: {params['status_filter']}")
+                query = query.filter(models.Task.status == params['status_filter'])
             if params.get("priority_filter"):
-                filters.append(f"priority: {params['priority_filter']}")
+                query = query.filter(models.Task.priority == params['priority_filter'])
             if params.get("category_filter"):
-                filters.append(f"category: {params['category_filter']}")
-
-            if filters:
-                response_text = f"I'll fetch your tasks with filters: {', '.join(filters)}"
+                query = query.filter(models.Task.category == params['category_filter'])
+            
+            tasks = query.order_by(models.Task.created_at.desc()).all()
+            
+            if tasks:
+                task_list = "\n".join([f"• {t.title} ({t.status}) - Priority: {t.priority}" for t in tasks[:10]])
+                more = f"\n...and {len(tasks) - 10} more tasks" if len(tasks) > 10 else ""
+                response_text = f"📋 Your tasks:\n{task_list}{more}"
             else:
-                response_text = "I'll fetch all your tasks for you."
-
+                response_text = "You have no tasks matching your criteria."
+            
             action = {
                 "type": "list_tasks",
-                "data": params
+                "data": [{"id": t.id, "title": t.title, "status": t.status} for t in tasks]
             }
         elif intent == "update_task":
             params = parsed_command["params"]
-            response_text = f"I'll update the task '{params['task_identifier']}'"
+            task_identifier = params['task_identifier'].lower()
+            update_type = params.get('update_type', 'other')
+            new_value = params.get('new_value')
+            
+            # Find the task by title (case insensitive partial match)
+            task = db.query(models.Task).filter(
+                models.Task.user_id == current_user.id,
+                models.Task.title.ilike(f"%{task_identifier}%")
+            ).first()
+            
+            if task:
+                if update_type == 'status':
+                    task.status = new_value or 'completed'
+                elif update_type == 'priority':
+                    task.priority = new_value or 'medium'
+                elif update_type == 'due_date' and new_value:
+                    task.due_date = datetime.strptime(new_value, "%Y-%m-%d") if isinstance(new_value, str) else new_value
+                else:
+                    # Default: mark as completed
+                    task.status = 'completed'
+                
+                db.commit()
+                response_text = f"✅ Task '{task.title}' has been updated."
+            else:
+                response_text = f"❌ I couldn't find a task matching '{task_identifier}'."
+            
             action = {
                 "type": "update_task",
-                "data": params
+                "data": {"task_identifier": task_identifier}
             }
         elif intent == "delete_task":
             params = parsed_command["params"]
-            response_text = f"I'll handle the task '{params['task_identifier']}'"
+            task_identifier = params['task_identifier'].lower()
+            
+            # Find the task by title (case insensitive partial match)
+            task = db.query(models.Task).filter(
+                models.Task.user_id == current_user.id,
+                models.Task.title.ilike(f"%{task_identifier}%")
+            ).first()
+            
+            if task:
+                task_title = task.title
+                db.delete(task)
+                db.commit()
+                response_text = f"✅ Task '{task_title}' has been deleted."
+            else:
+                response_text = f"❌ I couldn't find a task matching '{task_identifier}'."
+            
             action = {
                 "type": "delete_task",
-                "data": params
+                "data": {"task_identifier": task_identifier}
             }
         elif intent == "summary":
             # Fetch task summary from database
@@ -282,8 +347,9 @@ async def chat_with_bot(
             total_tasks = len(all_tasks)
             completed_tasks = len([t for t in all_tasks if t.status == "completed"])
             pending_tasks = total_tasks - completed_tasks
-
-            response_text = f"You have {total_tasks} total tasks, with {completed_tasks} completed and {pending_tasks} pending."
+            high_priority = len([t for t in all_tasks if t.priority == "high" and t.status != "completed"])
+            
+            response_text = f"📊 Your Task Summary:\n• Total: {total_tasks}\n• Completed: {completed_tasks}\n• Pending: {pending_tasks}\n• High Priority: {high_priority}"
         elif intent == "unknown":
             # Use OpenAI to generate a helpful response
             try:

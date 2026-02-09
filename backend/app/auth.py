@@ -137,3 +137,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
                 self.email = email
                 self.full_name = 'Demo User'
         return DemoUser()
+
+
+@router.get("/me", response_model=schemas.User)
+def read_users_me(current_user: models.User = Depends(get_current_user)):
+    """
+    Get current user info
+    """
+    return current_user
