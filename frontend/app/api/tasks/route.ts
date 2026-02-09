@@ -1,19 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Pool } from 'pg';
+
+// Use dynamic import for pg to avoid type issues
+let Pool: any;
+
+async function getPool() {
+  if (!Pool) {
+    const pg = await import('pg');
+    Pool = pg.Pool;
+  }
+  return Pool;
+}
 
 // Neon PostgreSQL connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
-  ssl: {
-    rejectUnauthorized: false
+const getConnectionString = () => {
+  return process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+};
+
+async function queryDB(sql: string, params: any[] = []) {
+  const PoolClass = await getPool();
+  const pool = new PoolClass({
+    connectionString: getConnectionString(),
+    ssl: { rejectUnauthorized: false }
+  });
+  
+  try {
+    const result = await pool.query(sql, params);
+    return result.rows;
+  } finally {
+    await pool.end();
   }
-});
+}
 
 // Initialize database tables
 async function initDB() {
-  const client = await pool.connect();
   try {
-    await client.query(`
+    await queryDB(`
       CREATE TABLE IF NOT EXISTS tasks (
         id SERIAL PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
@@ -30,8 +51,6 @@ async function initDB() {
     console.log('Database tables initialized');
   } catch (err) {
     console.error('DB init error:', err);
-  } finally {
-    client.release();
   }
 }
 
@@ -53,15 +72,15 @@ function formatTask(row: any) {
   };
 }
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     console.log('GET all tasks - from Neon database');
     
-    const result = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
-    const tasks = result.rows.map(formatTask);
+    const tasks = await queryDB('SELECT * FROM tasks ORDER BY created_at DESC');
+    const formattedTasks = tasks.map(formatTask);
     
-    console.log('Returning tasks:', tasks.length);
-    return NextResponse.json(tasks);
+    console.log('Returning tasks:', formattedTasks.length);
+    return NextResponse.json(formattedTasks);
   } catch (error) {
     console.error('Tasks API error:', error);
     return NextResponse.json(
@@ -71,11 +90,11 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-export async function POST(_request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     console.log('POST create task - to Neon database');
 
-    const body = await _request.json();
+    const body = await request.json();
     const { title, description, due_date, priority, category, status } = body;
 
     if (!title) {
@@ -85,14 +104,14 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    const result = await pool.query(
+    const result = await queryDB(
       `INSERT INTO tasks (title, description, status, priority, category, due_date, user_id)
        VALUES ($1, $2, $3, $4, $5, $6, 1)
        RETURNING *`,
       [title, description || null, status || 'pending', priority || 'medium', category || null, due_date || null]
     );
 
-    const newTask = formatTask(result.rows[0]);
+    const newTask = formatTask(result[0]);
     console.log('Task created successfully:', newTask);
     
     return NextResponse.json(newTask, { status: 201 });

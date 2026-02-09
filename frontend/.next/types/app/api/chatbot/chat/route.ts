@@ -1,4 +1,4 @@
-// File: C:\Users\HAROON TRADERS\OneDrive\Desktop\hackthon 2\frontend\app\api\chatbot\chat\route.ts
+// File: c:\Users\HAROON TRADERS\OneDrive\Desktop\hackthon 2\frontend\app\api\chatbot\chat\route.ts
 import * as entry from '../../../../../../app/api/chatbot/chat/route.js'
 import type { NextRequest } from 'next/server.js'
 

@@ -1,4 +1,4 @@
-// File: C:\Users\HAROON TRADERS\OneDrive\Desktop\hackthon 2\frontend\app\layout.tsx
+// File: c:\Users\HAROON TRADERS\OneDrive\Desktop\hackthon 2\frontend\app\layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

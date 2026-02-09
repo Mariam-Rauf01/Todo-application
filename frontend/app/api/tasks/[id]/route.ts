@@ -1,13 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Pool } from 'pg';
+
+// Use dynamic import for pg to avoid type issues
+let Pool: any;
+
+async function getPool() {
+  if (!Pool) {
+    const pg = await import('pg');
+    Pool = pg.Pool;
+  }
+  return Pool;
+}
 
 // Neon PostgreSQL connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
-  ssl: {
-    rejectUnauthorized: false
+const getConnectionString = () => {
+  return process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+};
+
+async function queryDB(sql: string, params: any[] = []) {
+  const PoolClass = await getPool();
+  const pool = new PoolClass({
+    connectionString: getConnectionString(),
+    ssl: { rejectUnauthorized: false }
+  });
+  
+  try {
+    const result = await pool.query(sql, params);
+    return result.rows;
+  } finally {
+    await pool.end();
   }
-});
+}
 
 // Helper function to format task from database row
 function formatTask(row: any) {
@@ -25,23 +47,23 @@ function formatTask(row: any) {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     console.log('GET task ID:', params.id);
 
     const taskId = parseInt(params.id);
-    const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [taskId]);
+    const result = await queryDB('SELECT * FROM tasks WHERE id = $1', [taskId]);
     
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return NextResponse.json(
         { error: 'Task not found' },
         { status: 404 }
       );
     }
 
-    const task = formatTask(result.rows[0]);
+    const task = formatTask(result[0]);
     return NextResponse.json(task);
   } catch (error) {
     console.error('Get task API error:', error);
@@ -53,18 +75,18 @@ export async function GET(
 }
 
 export async function PUT(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     console.log('PUT task ID:', params.id);
 
     const taskId = parseInt(params.id);
-    const body = await _request.json();
+    const body = await request.json();
 
     // Check if task exists
-    const check = await pool.query('SELECT id FROM tasks WHERE id = $1', [taskId]);
-    if (check.rows.length === 0) {
+    const check = await queryDB('SELECT id FROM tasks WHERE id = $1', [taskId]);
+    if (check.length === 0) {
       return NextResponse.json(
         { error: 'Task not found' },
         { status: 404 }
@@ -73,7 +95,7 @@ export async function PUT(
 
     const { title, description, status, priority, category, due_date } = body;
 
-    const result = await pool.query(
+    const result = await queryDB(
       `UPDATE tasks 
        SET title = COALESCE($1, title),
            description = COALESCE($2, description),
@@ -87,7 +109,7 @@ export async function PUT(
       [title, description, status, priority, category, due_date, taskId]
     );
 
-    const updatedTask = formatTask(result.rows[0]);
+    const updatedTask = formatTask(result[0]);
     console.log('PUT successful:', updatedTask);
     return NextResponse.json(updatedTask);
   } catch (error) {
@@ -100,7 +122,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -109,15 +131,15 @@ export async function DELETE(
     const taskId = parseInt(params.id);
 
     // Check if task exists
-    const check = await pool.query('SELECT id FROM tasks WHERE id = $1', [taskId]);
-    if (check.rows.length === 0) {
+    const check = await queryDB('SELECT id FROM tasks WHERE id = $1', [taskId]);
+    if (check.length === 0) {
       return NextResponse.json(
         { error: 'Task not found' },
         { status: 404 }
       );
     }
 
-    await pool.query('DELETE FROM tasks WHERE id = $1', [taskId]);
+    await queryDB('DELETE FROM tasks WHERE id = $1', [taskId]);
     console.log('DELETE successful');
 
     return NextResponse.json({ message: 'Task deleted successfully' });

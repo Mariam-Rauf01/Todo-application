@@ -1,4 +1,4 @@
-// File: C:\Users\HAROON TRADERS\OneDrive\Desktop\hackthon 2\frontend\app\api\auth\signup\route.ts
+// File: c:\Users\HAROON TRADERS\OneDrive\Desktop\hackthon 2\frontend\app\api\auth\signup\route.ts
 import * as entry from '../../../../../../app/api/auth/signup/route.js'
 import type { NextRequest } from 'next/server.js'
 
