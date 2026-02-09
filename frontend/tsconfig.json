@@ -36,7 +36,8 @@
   },
   "include": [
     "app",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "types/**/*"
   ],
   "references": [
     {
