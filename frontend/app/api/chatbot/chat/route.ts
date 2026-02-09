@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { message } = body;
@@ -13,7 +13,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the access token from cookies
-    const accessToken = request.cookies.get('access_token')?.value;
+    const cookieHeader = request.headers.get('cookie') || '';
+    const accessTokenMatch = cookieHeader.match(/access_token=([^;]+)/);
+    const accessToken = accessTokenMatch ? accessTokenMatch[1] : null;
 
     if (!accessToken) {
       return NextResponse.json(

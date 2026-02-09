@@ -1,5 +1,5 @@
 declare module 'next/server' {
-  export class NextRequest {
+  export class NextRequest extends Request {
     json(): Promise<any>;
     cookies: {
       get(name: string): { value: string } | undefined;
