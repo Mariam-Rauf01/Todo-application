@@ -1,34 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Use dynamic import for pg to avoid type issues
-let Pool: any;
+// Simple pool variable - will be initialized lazily
+let pool: any = null;
 
-async function getPool() {
-  if (!Pool) {
-    const pg = await import('pg');
-    Pool = pg.Pool;
+function getPool() {
+  if (!pool) {
+    const { Pool } = require('pg');
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+      ssl: { rejectUnauthorized: false }
+    });
   }
-  return Pool;
+  return pool;
 }
 
-// Neon PostgreSQL connection
-const getConnectionString = () => {
-  return process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
-};
-
 async function queryDB(sql: string, params: any[] = []) {
-  const PoolClass = await getPool();
-  const pool = new PoolClass({
-    connectionString: getConnectionString(),
-    ssl: { rejectUnauthorized: false }
-  });
-  
-  try {
-    const result = await pool.query(sql, params);
-    return result.rows;
-  } finally {
-    await pool.end();
-  }
+  const pg = getPool();
+  const result = await pg.query(sql, params);
+  return result.rows;
 }
 
 // Initialize database tables
@@ -54,7 +43,6 @@ async function initDB() {
   }
 }
 
-// Initialize on first request
 initDB();
 
 // Helper function to format task from database row
