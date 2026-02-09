@@ -25,7 +25,7 @@ function formatTask(row: any) {
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -53,14 +53,14 @@ export async function GET(
 }
 
 export async function PUT(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     console.log('PUT task ID:', params.id);
 
     const taskId = parseInt(params.id);
-    const body = await request.json();
+    const body = await _request.json();
 
     // Check if task exists
     const check = await pool.query('SELECT id FROM tasks WHERE id = $1', [taskId]);
@@ -100,7 +100,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {

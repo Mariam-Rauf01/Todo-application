@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
-import { isAuthenticated } from '../utils/auth';
 
 interface Task {
   id: number;

@@ -53,7 +53,7 @@ function formatTask(row: any) {
   };
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     console.log('GET all tasks - from Neon database');
     
@@ -71,11 +71,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     console.log('POST create task - to Neon database');
 
-    const body = await request.json();
+    const body = await _request.json();
     const { title, description, due_date, priority, category, status } = body;
 
     if (!title) {
