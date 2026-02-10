@@ -1,33 +1,5 @@
 import { NextResponse } from 'next/server';
 
-let pool: any = null;
-
-function getPool() {
-  if (!pool) {
-    const { Pool } = require('pg');
-    const dbUrl = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
-    pool = new Pool({
-      connectionString: dbUrl,
-      ssl: { rejectUnauthorized: false },
-      max: 5,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    });
-  }
-  return pool;
-}
-
-async function queryDB(sql: string, params: any[] = []) {
-  try {
-    const pg = getPool();
-    const result = await pg.query(sql, params);
-    return result.rows;
-  } catch (err) {
-    console.error('Query execution error:', err);
-    throw err;
-  }
-}
-
 function jsonResponse(data: any, status: number): Response {
   return new Response(JSON.stringify(data), {
     status,
@@ -44,28 +16,56 @@ export async function POST(request: Request): Promise<Response> {
       return jsonResponse({ error: 'Email and password are required' }, 400);
     }
 
-    const result = await queryDB('SELECT * FROM users WHERE email = $1', [email]);
+    // Call backend API for authentication
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
     
-    if (result.length === 0) {
-      return jsonResponse({ error: 'Invalid email or password' }, 401);
+    const loginResponse = await fetch(`${backendUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        username: email,
+        password: password,
+      }).toString(),
+    });
+
+    if (!loginResponse.ok) {
+      const errorData = await loginResponse.json();
+      return jsonResponse(
+        { error: errorData.detail || 'Invalid email or password' },
+        loginResponse.status
+      );
     }
 
-    const user = result[0];
-
-    if (user.password !== password) {
-      return jsonResponse({ error: 'Invalid email or password' }, 401);
-    }
+    const tokenData = await loginResponse.json();
 
     return jsonResponse({
-      user_id: user.id,
-      email: user.email,
-      name: user.name,
-      access_token: `token-${user.id}-${Date.now()}`,
+      access_token: tokenData.access_token,
+      token_type: tokenData.token_type,
+      email: email,
       message: 'Login successful'
     }, 200);
 
   } catch (error) {
     console.error('Login error:', error);
-    return jsonResponse({ error: 'Login failed' }, 500);
+    // Provide more helpful error message
+    let errorMessage = 'Login failed';
+    let isNetworkError = false;
+    
+    if (error instanceof TypeError) {
+      console.log('TypeError message:', error.message);
+      if (error.message.includes('fetch')) {
+        errorMessage = 'Unable to connect to backend at ' + process.env.NEXT_PUBLIC_BACKEND_URL + '. Please ensure the backend server is running';
+        isNetworkError = true;
+      } else {
+        errorMessage = error.message;
+      }
+    } else if (error instanceof Error) {
+      errorMessage = 'Login error: ' + error.message.slice(0, 150);
+    }
+    
+    console.error('Final error:', { errorMessage, isNetworkError, backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL });
+    return jsonResponse({ error: errorMessage, isNetworkError }, isNetworkError ? 503 : 500);
   }
 }

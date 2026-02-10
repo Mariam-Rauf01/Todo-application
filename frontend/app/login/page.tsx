@@ -17,8 +17,7 @@ export default function Login() {
     setError('');
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-      const response = await fetch(`${backendUrl}/api/auth/login`, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,9 +31,8 @@ export default function Login() {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('user_id', data.user_id);
+        localStorage.setItem('token_type', data.token_type);
         localStorage.setItem('user_email', data.email);
-        localStorage.setItem('user_name', data.name);
         document.cookie = `auth-token=${data.access_token}; path=/; max-age=1800; SameSite=Lax;`;
         router.push('/tasks');
       } else {
@@ -42,7 +40,7 @@ export default function Login() {
         setError(errorData.error || 'Login failed');
       }
     } catch (err) {
-      setError('An error occurred during login');
+      setError('Unable to connect to server. Please ensure the backend is running.');
       console.error(err);
     } finally {
       setIsLoading(false);

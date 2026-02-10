@@ -21,7 +21,7 @@ export default function Signup() {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name: fullName }),
+        body: JSON.stringify({ email, password, full_name: fullName }),
       });
 
       const data = await response.json().catch(() => null);
@@ -31,11 +31,11 @@ export default function Signup() {
           try {
             localStorage.setItem('user_id', data.user_id.toString());
             localStorage.setItem('user_email', data.email || email);
-            localStorage.setItem('user_name', data.name || fullName);
+            localStorage.setItem('user_name', data.full_name || fullName);
           } catch (e) {
             console.warn('localStorage unavailable', e);
           }
-          router.push('/tasks');
+          router.push('/login');
           return;
         }
         // fallback success path
@@ -50,7 +50,7 @@ export default function Signup() {
         setError('Signup failed');
       }
     } catch (err) {
-      setError('An error occurred during signup');
+      setError('Unable to connect to server. Please ensure the backend is running.');
       console.error(err);
     } finally {
       setIsLoading(false);
