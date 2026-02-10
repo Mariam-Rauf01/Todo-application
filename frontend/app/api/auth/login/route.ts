@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 let pool: any = null;
 
@@ -28,51 +28,44 @@ async function queryDB(sql: string, params: any[] = []) {
   }
 }
 
-export async function POST(request: NextRequest) {
+function jsonResponse(data: any, status: number): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export async function POST(request: Request): Promise<Response> {
   try {
     const body = await request.json();
     const { email, password } = body;
 
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      );
+      return jsonResponse({ error: 'Email and password are required' }, 400);
     }
 
-    // Find user by email
     const result = await queryDB('SELECT * FROM users WHERE email = $1', [email]);
     
     if (result.length === 0) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
+      return jsonResponse({ error: 'Invalid email or password' }, 401);
     }
 
     const user = result[0];
 
-    // Check password (in production, use proper hashing!)
     if (user.password !== password) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
+      return jsonResponse({ error: 'Invalid email or password' }, 401);
     }
 
-    return NextResponse.json({
+    return jsonResponse({
       user_id: user.id,
       email: user.email,
       name: user.name,
       access_token: `token-${user.id}-${Date.now()}`,
       message: 'Login successful'
-    }, { status: 200 });
+    }, 200);
 
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json(
-      { error: 'Login failed: ' + String(error).slice(0, 200) },
-      { status: 500 }
-    );
+    return jsonResponse({ error: 'Login failed' }, 500);
   }
 }
