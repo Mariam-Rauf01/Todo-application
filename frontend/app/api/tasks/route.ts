@@ -60,7 +60,7 @@ function formatTask(row: any) {
   };
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     console.log('GET all tasks - from Neon database');
     

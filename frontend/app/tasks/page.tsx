@@ -297,7 +297,7 @@ export default function TasksPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                  TaskFlow
+                  TaskMate
                 </h1>
                 <p className="text-xs text-gray-500">Get things done! ✨</p>
               </div>
