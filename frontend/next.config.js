@@ -7,4 +7,8 @@ const nextConfig = {
   eslint: {
     ignoreBuildErrors: true,
   },
+  // Use local cache directory to avoid OneDrive sync issues
+  cacheDir: './.next-cache',
 }
+
+module.exports = nextConfig

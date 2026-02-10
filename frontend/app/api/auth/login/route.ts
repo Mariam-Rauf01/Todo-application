@@ -1,19 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-function jsonResponse(data: any, status: number): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
-
-export async function POST(request: Request): Promise<Response> {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password } = body;
 
     if (!email || !password) {
-      return jsonResponse({ error: 'Email and password are required' }, 400);
+      return NextResponse.json(
+        { error: 'Email and password are required' },
+        { status: 400 }
+      );
     }
 
     // Call backend API for authentication
@@ -32,20 +28,20 @@ export async function POST(request: Request): Promise<Response> {
 
     if (!loginResponse.ok) {
       const errorData = await loginResponse.json();
-      return jsonResponse(
+      return NextResponse.json(
         { error: errorData.detail || 'Invalid email or password' },
-        loginResponse.status
+        { status: loginResponse.status }
       );
     }
 
     const tokenData = await loginResponse.json();
 
-    return jsonResponse({
+    return NextResponse.json({
       access_token: tokenData.access_token,
       token_type: tokenData.token_type,
       email: email,
       message: 'Login successful'
-    }, 200);
+    }, { status: 200 });
 
   } catch (error) {
     console.error('Login error:', error);
@@ -66,6 +62,9 @@ export async function POST(request: Request): Promise<Response> {
     }
     
     console.error('Final error:', { errorMessage, isNetworkError, backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL });
-    return jsonResponse({ error: errorMessage, isNetworkError }, isNetworkError ? 503 : 500);
+    return NextResponse.json(
+      { error: errorMessage, isNetworkError },
+      { status: isNetworkError ? 503 : 500 }
+    );
   }
 }

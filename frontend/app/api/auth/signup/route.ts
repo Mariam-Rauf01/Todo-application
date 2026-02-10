@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-function jsonResponse(data: any, status: number): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

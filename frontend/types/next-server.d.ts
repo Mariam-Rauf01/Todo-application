@@ -4,21 +4,21 @@ declare module 'next/server' {
     cookies: {
       get(name: string): { value: string } | undefined;
     };
+    nextUrl: {
+      searchParams: {
+        get(name: string): string | null;
+      };
+    };
   }
-  
+
   interface NextResponseOptions {
     status?: number;
+    headers?: Record<string, string>;
   }
-  
-  export function NextResponse(json: any, options?: NextResponseOptions): {
-    status: number;
-    json(): Promise<any>;
-  };
-  
-  export namespace NextResponse {
-    function json(body: any, options?: NextResponseOptions): {
-      status: number;
-      json(): Promise<any>;
-    };
+
+  export function json(body: any, options?: NextResponseOptions): Response;
+
+  export class NextResponse {
+    static json(body: any, options?: NextResponseOptions): Response;
   }
 }
