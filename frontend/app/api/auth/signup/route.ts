@@ -7,7 +7,7 @@ function jsonResponse(data: any, status: number): Response {
   });
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password, full_name } = body;
