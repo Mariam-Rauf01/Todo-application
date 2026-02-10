@@ -17,13 +17,14 @@ export default function Login() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/login', {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: new URLSearchParams({
-          username: email,
+        body: JSON.stringify({
+          email: email,
           password: password,
         }),
       });
@@ -31,11 +32,14 @@ export default function Login() {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('user_id', data.user_id);
+        localStorage.setItem('user_email', data.email);
+        localStorage.setItem('user_name', data.name);
         document.cookie = `auth-token=${data.access_token}; path=/; max-age=1800; SameSite=Lax;`;
         router.push('/tasks');
       } else {
         const errorData = await response.json();
-        setError(errorData.detail || 'Login failed');
+        setError(errorData.error || 'Login failed');
       }
     } catch (err) {
       setError('An error occurred during login');

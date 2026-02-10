@@ -842,7 +842,17 @@
         // Set up event listeners
         function setupEventListeners() {
             // Use the stored reference to addTaskBtn
-            addTaskBtn.addEventListener('click', addNewTask);
+            addTaskBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (addTaskBtn.hasAttribute('data-task-id')) {
+                    // If the button has a task ID, it means we're updating
+                    const taskId = parseInt(addTaskBtn.getAttribute('data-task-id'));
+                    updateExistingTask(taskId);
+                } else {
+                    // Otherwise, we're adding a new task
+                    addNewTask();
+                }
+            });
 
             filterButtons.forEach(button => {
                 button.addEventListener('click', async () => {
@@ -935,6 +945,8 @@
             addTaskBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Update Task';
             // Store the task ID being edited
             addTaskBtn.setAttribute('data-task-id', id);
+            
+            // Temporarily change the button's click handler to update function
             addTaskBtn.onclick = function() {
                 const taskId = parseInt(addTaskBtn.getAttribute('data-task-id'));
                 updateExistingTask(taskId);
@@ -976,7 +988,7 @@
 
                 if (response.ok) {
                     const updatedTask = await response.json();
-                    
+
                     // Update the task in the local array
                     const taskIndex = tasks.findIndex(t => t.id === id);
                     if (taskIndex !== -1) {
@@ -985,7 +997,7 @@
                         // If not found locally, add it
                         tasks.push(updatedTask);
                     }
-                    
+
                     loadTasks();
                     // Reset form to add mode
                     resetForm();
@@ -1009,7 +1021,6 @@
 
             // Remove the task ID attribute and restore original functionality
             addTaskBtn.removeAttribute('data-task-id');
-            addTaskBtn.onclick = function() { addNewTask(); };
             taskTitleInput.focus();
         }
 
@@ -1537,46 +1548,63 @@
         
     </script>
 
-    <!-- Simple Working Chatbot -->
+    <!-- Enhanced Chatbot -->
     <div id="simple-chatbot">
-        <div id="chatbot-button">
-            <span>💬</span>
+        <div id="chatbot-trigger">
+            <span>🤖</span>
         </div>
-        <div id="chatbot-window">
+        <div id="chatbot-container">
             <div id="chatbot-header">
-                <h3>Task Helper</h3>
-                <span id="close-chatbot">×</span>
+                <div class="chatbot-header-content">
+                    <h3>AI Task Assistant</h3>
+                    <p>Always here to help you manage tasks</p>
+                </div>
+                <span id="close-chatbot">✕</span>
             </div>
             <div id="chat-messages">
-                <div class="bot-message">Hi! I'm your Task Helper. Ask me anything about your tasks!</div>
+                <div class="bot-message welcome-message">
+                    <div class="bot-avatar">🤖</div>
+                    <div class="message-content">
+                        <p>Hello! I'm your AI Task Assistant. How can I help you today?</p>
+                        <div class="quick-replies">
+                            <button class="quick-reply">Add a task</button>
+                            <button class="quick-reply">View my tasks</button>
+                            <button class="quick-reply">Update a task</button>
+                            <button class="quick-reply">Get help</button>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div id="chat-input-area">
-                <input type="text" id="chat-input" placeholder="Type your message...">
-                <button id="send-message">➤</button>
+                <input type="text" id="chat-input" placeholder="Type your message here...">
+                <button id="send-message"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
     </div>
 
     <script>
-        // Simple working chatbot functionality
+        // Enhanced chatbot functionality
         function initializeChatbot() {
-            const chatButton = document.getElementById('chatbot-button');
-            const chatWindow = document.getElementById('chatbot-window');
+            const chatTrigger = document.getElementById('chatbot-trigger');
+            const chatContainer = document.getElementById('chatbot-container');
             const closeChatbot = document.getElementById('close-chatbot');
             const chatMessages = document.getElementById('chat-messages');
             const chatInput = document.getElementById('chat-input');
             const sendMessageBtn = document.getElementById('send-message');
-            
+            const quickReplyButtons = document.querySelectorAll('.quick-reply');
+
             // Toggle chat window
-            chatButton.addEventListener('click', function() {
-                chatWindow.style.display = 'block';
+            chatTrigger.addEventListener('click', function() {
+                chatContainer.style.display = 'block';
+                chatTrigger.style.display = 'none';
             });
-            
+
             // Close chat window
             closeChatbot.addEventListener('click', function() {
-                chatWindow.style.display = 'none';
+                chatContainer.style.display = 'none';
+                chatTrigger.style.display = 'flex';
             });
-            
+
             // Send message function
             function sendMessage() {
                 const message = chatInput.value.trim();
@@ -1584,108 +1612,122 @@
                     // Add user message
                     const userMsgDiv = document.createElement('div');
                     userMsgDiv.classList.add('user-message');
-                    userMsgDiv.textContent = message;
+                    userMsgDiv.innerHTML = `<div class="message-content">${message}</div>`;
                     chatMessages.appendChild(userMsgDiv);
-                    
+
                     // Clear input
                     chatInput.value = '';
-                    
+
                     // Scroll to bottom
                     chatMessages.scrollTop = chatMessages.scrollHeight;
-                    
+
                     // Bot response after delay
                     setTimeout(() => {
                         const botResponse = getBotResponse(message);
                         const botMsgDiv = document.createElement('div');
                         botMsgDiv.classList.add('bot-message');
-                        botMsgDiv.textContent = botResponse;
+                        botMsgDiv.innerHTML = `
+                            <div class="bot-avatar">🤖</div>
+                            <div class="message-content">${botResponse}</div>
+                        `;
                         chatMessages.appendChild(botMsgDiv);
-                        
+
                         // Scroll to bottom again
                         chatMessages.scrollTop = chatMessages.scrollHeight;
                     }, 500);
                 }
             }
-            
+
             // Bot response logic
             function getBotResponse(userMessage) {
                 const msg = userMessage.toLowerCase();
-                
+
                 // Check if user is logged in
                 if (!currentUser) {
                     if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
-                        return 'Hello! 😊 Please sign in first to manage your tasks.';
+                        return '<p>Hello! 😊 Please sign in first to manage your tasks.</p>';
                     }
-                    return 'Please sign in to your account to manage tasks. Use the sign-in panel at the top.';
+                    return '<p>Please sign in to your account to manage tasks. Use the sign-in panel at the top.</p>';
                 }
-                
+
                 // Handle task management commands
                 if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
-                    return `Hello ${currentUser.name || currentUser.email}! 😊 How can I help with your tasks today?`;
+                    return `<p>Hello ${currentUser.full_name || currentUser.email}! 😊 How can I help with your tasks today?</p>`;
                 } else if (msg.includes('add') || msg.includes('create') || msg.includes('new')) {
                     // Extract task info from message
                     const taskMatch = userMessage.match(/(?:to|for)\s+(.+)/i);
                     if (taskMatch) {
                         const taskTitle = taskMatch[1];
                         // Create a mock task addition
-                        return `Got it! 📝 I've added "${taskTitle}" to your task list. (Note: Use the form above to actually add tasks)`;
+                        return `<p>Got it! 📝 I've noted "${taskTitle}". Use the form above to actually add tasks.</p>`;
                     }
-                    return 'Sure! Tell me the task title and details, and I can help you add it. Format: "Add task to [task details]"';
+                    return '<p>Sure! Tell me the task title and details, and I can guide you. Format: "Add task to [task details]"</p>';
                 } else if (msg.includes('edit') || msg.includes('update') || msg.includes('change')) {
+                    // Extract task number if mentioned
                     const taskNum = userMessage.match(/(\d+)/);
                     if (taskNum) {
-                        return `I can help update task #${taskNum[1]}. (Note: Click the "Edit" button on the task card to modify it)`;
+                        return `<p>To update task #${taskNum[1]}, click the "Edit" button on the task card. This will populate the form above with the task details. Make your changes and click "Update Task" to save.</p>`;
                     }
-                    return 'To update a task, tell me the task number and what you want to change. Example: "Update task 1 to mark as completed"';
+                    return `<p>To update a task, click the "Edit" button on the task card you want to modify. This will load the task details into the form above. Make your changes and click "Update Task" to save.</p>`;
                 } else if (msg.includes('delete') || msg.includes('remove')) {
                     const taskNum = userMessage.match(/(\d+)/);
                     if (taskNum) {
-                        return `Okay! Task #${taskNum[1]} has been deleted. 🗑️ (Note: Click the "Delete" button on the task card to remove it)`;
+                        return `<p>Task #${taskNum[1]} can be deleted by clicking the "Delete" button on the task card. 🗑️ Remember, this action cannot be undone.</p>`;
                     }
-                    return 'To delete a task, tell me the task number. Example: "Delete task 1"';
+                    return '<p>To delete a task, click the "Delete" button on the task card. Remember, this action cannot be undone.</p>';
                 } else if (msg.includes('complete') || msg.includes('done') || msg.includes('finish')) {
-                    return 'To mark a task as completed, change its status to "Completed" using the edit button.';
+                    return '<p>To mark a task as completed, click the checkbox next to the task or use the "Edit" button to change its status to "Completed".</p>';
                 } else if (msg.includes('show') || msg.includes('list') || msg.includes('all')) {
-                    const userTasks = tasks.filter(task => task.userId === currentUser.id);
+                    const userTasks = tasks;
                     if (userTasks.length === 0) {
-                        return 'You have no tasks yet! 📝 Add your first task using the form above.';
+                        return '<p>You have no tasks yet! 📝 Add your first task using the form above.</p>';
                     }
-                    let taskList = 'Here are your tasks:\n';
+                    let taskList = '<p>Here are your tasks:</p><ul>';
                     userTasks.forEach((task, index) => {
-                        taskList += `${index + 1}. ${task.title} (${task.status}) ${getStatusIcon(task.status)}\n`;
+                        taskList += `<li>${index + 1}. ${task.title} (${task.status}) ${getStatusIcon(task.status)}</li>`;
                     });
+                    taskList += '</ul>';
                     return taskList;
                 } else if (msg.includes('help')) {
-                    return 'I can help you: add/edit/delete tasks, show all tasks, mark as complete, or organize categories. Try: "Add task to [details]", "Show all tasks", "Complete task 1", etc.';
+                    return '<p>I can help you: add/edit/delete tasks, show all tasks, mark as complete, or organize categories. Try: "Add task to [details]", "Show all tasks", "Complete task 1", etc.</p>';
                 } else if (msg.includes('category') || msg.includes('type')) {
-                    return 'You can categorize tasks as Personal, Work, Shopping, Health, Education, or Other.';
+                    return '<p>You can categorize tasks as Personal, Work, Shopping, Health, Education, or Other.</p>';
                 } else if (msg.includes('filter') || msg.includes('show')) {
-                    return 'Use the filter buttons (All, Pending, In Progress, Completed) to sort your tasks.';
+                    return '<p>Use the filter buttons (All, Pending, In Progress, Completed) to sort your tasks.</p>';
                 } else {
                     const responses = [
-                        `I'm here to help with your tasks, ${currentUser.name || 'friend'}!`,
-                        'Ask me to add, edit, delete, or show your tasks.',
-                        'Try: "Add task to [details]", "Show all tasks", "Complete task 1"',
-                        'Need help organizing your tasks? I\'m here for that! 💪',
-                        'What would you like to do with your tasks?'
+                        `<p>I'm here to help with your tasks, ${currentUser.full_name || 'friend'}!</p>`,
+                        '<p>Ask me to add, edit, delete, or show your tasks.</p>',
+                        '<p>Try: "Add task to [details]", "Show all tasks", "Complete task 1"</p>',
+                        '<p>Need help organizing your tasks? I\'m here for that! 💪</p>',
+                        '<p>What would you like to do with your tasks?</p>'
                     ];
-                    return responses[Math.floor(Math.random() * responses.length)];
+                    return `<p>${responses[Math.floor(Math.random() * responses.length)]}</p>`;
                 }
             }
-            
+
             // Event listeners for sending messages
             sendMessageBtn.addEventListener('click', sendMessage);
-            
+
             chatInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     sendMessage();
                 }
             });
-            
-            // Initially hide the chat window
-            chatWindow.style.display = 'none';
+
+            // Quick reply button functionality
+            quickReplyButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const text = this.textContent;
+                    chatInput.value = text;
+                    sendMessage();
+                });
+            });
+
+            // Initially hide the chat container
+            chatContainer.style.display = 'none';
         }
-        
+
         // Initialize chatbot after DOM and app are fully loaded
         document.addEventListener('DOMContentLoaded', function() {
             // Wait a bit to ensure all app variables are initialized
@@ -1694,169 +1736,12 @@
     </script>
 
     <style>
-        /* Simple Chatbot Styles */
+        /* Enhanced Chatbot Styles */
         #simple-chatbot {
             position: fixed;
             bottom: 20px;
             right: 20px;
             z-index: 10000;
-        }
-
-        #chatbot-button {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-            transition: all 0.3s ease;
-        }
-
-        #chatbot-button:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.6);
-        }
-
-        #chatbot-window {
-            position: absolute;
-            bottom: 70px;
-            right: 0;
-            width: 350px;
-            height: 450px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            display: none;
-        }
-
-        #chatbot-header {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: white;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #chatbot-header h3 {
-            margin: 0;
-            font-size: 1.1rem;
-        }
-
-        #close-chatbot {
-            font-size: 1.5rem;
-            cursor: pointer;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-
-        #close-chatbot:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        #chat-messages {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background: #f9fafb;
-        }
-
-        .user-message, .bot-message {
-            max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 18px;
-            font-size: 0.9rem;
-            line-height: 1.4;
-            word-wrap: break-word;
-        }
-
-        .user-message {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 5px;
-        }
-
-        .bot-message {
-            background: white;
-            color: #374151;
-            align-self: flex-start;
-            border: 1px solid #e5e7eb;
-            border-bottom-left-radius: 5px;
-        }
-
-        #chat-input-area {
-            display: flex;
-            padding: 15px;
-            background: white;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        #chat-input {
-            flex: 1;
-            padding: 12px 15px;
-            border: 1px solid #d1d5db;
-            border-radius: 24px;
-            font-size: 0.9rem;
-            outline: none;
-        }
-
-        #chat-input:focus {
-            border-color: #818cf8;
-            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
-        }
-
-        #send-message {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: white;
-            border: none;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            margin-left: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        @media (max-width: 768px) {
-            #chatbot-window {
-                width: 300px;
-                height: 400px;
-                right: 0;
-            }
-        }
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            margin-left: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        #chatbot-send:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
         }
 
         #chatbot-trigger {
@@ -1885,19 +1770,213 @@
             box-shadow: 0 8px 20px rgba(99, 102, 241, 0.6);
         }
 
+        #chatbot-container {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 380px;
+            height: 500px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        #chatbot-header {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 18px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chatbot-header-content h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .chatbot-header-content p {
+            margin: 0;
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        #close-chatbot {
+            font-size: 1.8rem;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: background 0.3s ease;
+        }
+
+        #close-chatbot:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        #chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #f9fafb;
+        }
+
+        .bot-message, .user-message {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bot-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 16px;
+        }
+
+        .message-content {
+            padding: 14px 18px;
+            border-radius: 18px;
+            line-height: 1.5;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .user-message .message-content {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot-message .message-content {
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            border-bottom-left-radius: 5px;
+        }
+
+        .welcome-message .message-content {
+            background: white;
+            border: 1px solid #dbeafe;
+            box-shadow: 0 4px 6px rgba(30, 64, 175, 0.05);
+        }
+
+        .quick-replies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .quick-reply {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            border-radius: 16px;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-reply:hover {
+            background: #bae6fd;
+            transform: translateY(-2px);
+        }
+
+        #chat-input-area {
+            display: flex;
+            padding: 15px 20px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        #chat-input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 1px solid #d1d5db;
+            border-radius: 24px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        #chat-input:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+        }
+
+        #send-message {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            margin-left: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        #send-message:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+        }
+
         @media (max-width: 768px) {
             #chatbot-container {
-                width: 300px;
-                height: 400px;
-                right: 10px;
-                bottom: 80px;
+                width: 320px;
+                height: 450px;
+                right: 15px;
+                bottom: 90px;
             }
 
             #chatbot-trigger {
-                right: 10px;
-                bottom: 10px;
+                right: 15px;
+                bottom: 15px;
                 width: 50px;
                 height: 50px;
+            }
+
+            .message-content {
+                padding: 12px 16px;
+                font-size: 0.9rem;
+            }
+
+            #chat-input {
+                padding: 12px 16px;
             }
         }
     </style>

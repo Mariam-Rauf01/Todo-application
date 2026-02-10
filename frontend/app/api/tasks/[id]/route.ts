@@ -6,18 +6,63 @@ let pool: any = null;
 function getPool() {
   if (!pool) {
     const { Pool } = require('pg');
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
-      ssl: { rejectUnauthorized: false }
-    });
+    
+    const dbUrl = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+    
+    console.log('Creating DB pool with URL:', dbUrl.substring(0, 50) + '...');
+    
+    try {
+      const connTimeout = parseInt(process.env.DB_CONN_TIMEOUT || '10000');
+      pool = new Pool({
+        connectionString: dbUrl,
+        ssl: { rejectUnauthorized: false },
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: connTimeout,
+      });
+      
+      pool.on('error', (err: any) => {
+        console.error('Pool error:', err);
+      });
+      
+      console.log('DB pool created successfully');
+    } catch (err) {
+      console.error('Failed to create pool:', err);
+      throw err;
+    }
   }
   return pool;
 }
 
 async function queryDB(sql: string, params: any[] = []) {
-  const pg = getPool();
-  const result = await pg.query(sql, params);
-  return result.rows;
+  let retryCount = 0;
+  const maxRetries = 1;
+  
+  while (retryCount <= maxRetries) {
+    try {
+      const pg = getPool();
+      console.log('Executing query:', sql.substring(0, 100) + '...', 'with params:', params);
+      const result = await pg.query(sql, params);
+      console.log('Query result rows:', result.rows.length);
+      return result.rows;
+    } catch (err: any) {
+      console.error(`Query execution error (attempt ${retryCount + 1}):`, err);
+      
+      // Check if it's a connection error
+      if ((err?.message?.includes('timeout') || err?.message?.includes('terminated')) && retryCount < maxRetries) {
+        console.log('Connection timeout/terminated, resetting pool and retrying...');
+        if (pool) {
+          await pool.end().catch(() => {});
+          pool = null;
+        }
+        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms before retry
+        retryCount++;
+        continue;
+      }
+      
+      throw err;
+    }
+  }
 }
 
 // Helper function to format task from database row
@@ -36,7 +81,7 @@ function formatTask(row: any) {
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -57,7 +102,7 @@ export async function GET(
   } catch (error) {
     console.error('Get task API error:', error);
     return NextResponse.json(
-      { error: 'Database error' },
+      { error: 'Database error: ' + String(error).slice(0, 200) },
       { status: 500 }
     );
   }
@@ -104,14 +149,14 @@ export async function PUT(
   } catch (error) {
     console.error('Update task API error:', error);
     return NextResponse.json(
-      { error: 'Database error' },
+      { error: 'Database error: ' + String(error).slice(0, 200) },
       { status: 500 }
     );
   }
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -135,7 +180,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Delete task API error:', error);
     return NextResponse.json(
-      { error: 'Database error' },
+      { error: 'Database error: ' + String(error).slice(0, 200) },
       { status: 500 }
     );
   }

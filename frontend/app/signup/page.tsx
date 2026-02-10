@@ -18,23 +18,36 @@ export default function Signup() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/signup', {
+      const response = await fetch('/api/auth/signup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          full_name: fullName,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name: fullName }),
       });
 
-      if (response.ok) {
+      const data = await response.json().catch(() => null);
+
+      if (response.ok && data) {
+        if (data.user_id) {
+          try {
+            localStorage.setItem('user_id', data.user_id.toString());
+            localStorage.setItem('user_email', data.email || email);
+            localStorage.setItem('user_name', data.name || fullName);
+          } catch (e) {
+            console.warn('localStorage unavailable', e);
+          }
+          router.push('/tasks');
+          return;
+        }
+        // fallback success path
         router.push('/login');
+        return;
+      }
+
+      // handle error payloads
+      if (data && (data.error || data.detail || data.message)) {
+        setError(data.error || data.detail || data.message);
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || 'Signup failed');
+        setError('Signup failed');
       }
     } catch (err) {
       setError('An error occurred during signup');
@@ -60,7 +73,7 @@ export default function Signup() {
               <h2 className="text-2xl font-bold text-gray-800">Create an account</h2>
               <p className="text-gray-500 mt-2">Get started with TaskFlow today</p>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-4 rounded-lg flex items-center gap-2">
@@ -68,7 +81,7 @@ export default function Signup() {
                   {error}
                 </div>
               )}
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                 <div className="relative">
@@ -83,7 +96,7 @@ export default function Signup() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                 <div className="relative">
@@ -98,7 +111,7 @@ export default function Signup() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
                 <div className="relative">
@@ -137,7 +150,7 @@ export default function Signup() {
                 )}
               </button>
             </form>
-            
+
             <div className="mt-8 text-center">
               <p className="text-gray-600">Already have an account?{' '}
                 <Link href="/login" className="text-purple-600 font-semibold hover:text-purple-800 transition-colors">
