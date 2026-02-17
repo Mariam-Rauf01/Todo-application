@@ -102,11 +102,16 @@ def schedule_task_due_notifications(db: Session, task, user_id: int):
     """Schedule notifications for task due dates"""
     if not task.due_date:
         return
-    
+
     # Schedule a notification 24 hours before due date
+    # Remove timezone info for comparison to avoid errors
     notification_time = task.due_date - timedelta(hours=24)
     
-    if notification_time > datetime.utcnow():
+    # Make both datetimes timezone-naive for comparison
+    notification_time_naive = notification_time.replace(tzinfo=None) if notification_time.tzinfo else notification_time
+    now_naive = datetime.utcnow()
+
+    if notification_time_naive > now_naive:
         notification = NotificationCreate(
             title="Task Due Soon",
             message=f"Your task '{task.title}' is due tomorrow.",
@@ -121,8 +126,12 @@ def schedule_overdue_notifications(db: Session, task, user_id: int):
     """Schedule notifications for overdue tasks"""
     if not task.due_date or task.status == "completed":
         return
+
+    # Make both datetimes timezone-naive for comparison
+    due_date_naive = task.due_date.replace(tzinfo=None) if task.due_date.tzinfo else task.due_date
+    now_naive = datetime.utcnow()
     
-    if datetime.utcnow() > task.due_date:
+    if now_naive > due_date_naive:
         notification = NotificationCreate(
             title="Task Overdue",
             message=f"Your task '{task.title}' is overdue.",

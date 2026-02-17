@@ -24,6 +24,12 @@ export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('Friend');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<{
+    type: string;
+    data: any;
+    message: string;
+  } | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -39,9 +45,13 @@ export default function AIAssistant() {
   useEffect(() => {
     const storedUserId = localStorage.getItem('user_id');
     const storedUserName = localStorage.getItem('user_name');
+    const storedUserEmail = localStorage.getItem('user_email');
     if (storedUserId) {
       setUserId(storedUserId);
       setUserName(storedUserName || 'Friend');
+    }
+    if (storedUserEmail) {
+      setUserEmail(storedUserEmail);
     }
   }, []);
 
@@ -57,7 +67,8 @@ export default function AIAssistant() {
   const detectLanguage = (text: string): string => {
     const urduRegex = /[\u0600-\u06FF]/g;
     const hindiRegex = /[\u0900-\u097F]/g;
-    const romanUrduRegex = /\b(mujhe|mere|meri|kya|kaunsa|task|kaam|banao|dalo|hatao|update|karna|hai|ho|hain|hn|dikhao|dikha|batao)\b/gi;
+    // More specific Roman Urdu words - avoid common English words like 'task', 'update'
+    const romanUrduRegex = /\b(mujhe|mere|meri|kya|kaunsa|kaam|banao|dalo|hatao|karna|hai|ho|hain|hn|dikhao|dikha|batao|apna|aapka|humaray|humaray|unka|inka|ek|do|tin|char|paanch|chas|ath|nahin|nahi|lekin|magar|phir|koi|kon|konsa|kahan|kyun|kais|aise|waise|tab|kal|aaj|raat|subah|shaam|din|month|saal|ghar|baar|bahar|andar|niche|upar|saamne|pichay|chalo|jayo|ao|raho|baitho|utho|khalo|phailao|samu)\b/gi;
     
     if (urduRegex.test(text)) return 'urdu';
     if (hindiRegex.test(text)) return 'hindi';
@@ -108,6 +119,11 @@ export default function AIAssistant() {
     if (/(?:show|list|display|dikha|dikhao|batao|kya|what)\s+(?:tasks?|todos?|kaam)/i.test(text) ||
         /(?:my |meri |mere )(?:tasks?|todos?|kaam)/i.test(text)) {
       return { action: 'show', language };
+    }
+
+    // Who am I patterns
+    if (/who am i|tell me about me|my email|identify me/i.test(text)) {
+      return { action: 'who_am_i', language };
     }
 
     return { action: 'chat', language };
@@ -187,7 +203,7 @@ export default function AIAssistant() {
     return [];
   };
 
-  const generateAIResponse = async (userMessage: string, language: string, action: string, parseResult: any) => {
+  const generateAIResponse = async (userMessage: string, language: string, action: string, parseResult: any): Promise<{ response: string; hasPendingAction: boolean }> => {
     const tasks = await fetchTasks();
     
     const responses: { [key: string]: { [key: string]: string | Function } } = {
@@ -203,6 +219,7 @@ export default function AIAssistant() {
         delete_error: (title: string) => `❌ I couldn't find a task matching "${title}". Try "show tasks" to see what you have.`,
         show_empty: `You don't have any tasks yet! Want to create one? Just say "create task: [task name]"`,
         show_list: (list: string) => `📋 Here are your current tasks, ${userName}:\n\n${list}\n\nWould you like to create a new one or update any of these?`,
+        who_am_i: `👤 You are logged in as a registered user. Your email is associated with your account.`,
         default: `I'm here to help! I can:\n• Create tasks (say "create task: buy milk")\n• Show your tasks (say "show tasks")\n• Update tasks (say "update task: old to: new")\n• Delete tasks (say "delete task: buy milk")\n\nWhat would you like to do?`,
       },
       urdu: {
@@ -270,16 +287,20 @@ export default function AIAssistant() {
         response = String(langResponses.create_help);
       } else if (action === 'update') {
         if (parseResult.oldTitle && parseResult.newTitle) {
-          const updated = await updateTask(parseResult.oldTitle, parseResult.newTitle);
-          if (updated) {
-            response = typeof langResponses.update_success === 'function'
-              ? (langResponses.update_success as Function)(parseResult.oldTitle, parseResult.newTitle)
-              : String(langResponses.update_success);
-          } else {
-            response = typeof langResponses.update_error === 'function'
-              ? (langResponses.update_error as Function)(parseResult.oldTitle)
-              : String(langResponses.update_error);
-          }
+          // Ask for confirmation first
+          const confirmMessage: Message = {
+            id: (Date.now() + 0.5).toString(),
+            text: `⚠️ Are you sure you want to update "${parseResult.oldTitle}" to "${parseResult.newTitle}"? Reply with 'yes' to confirm or 'no' to cancel.`,
+            sender: 'bot',
+            timestamp: new Date(),
+          };
+          setPendingAction({
+            type: 'update',
+            data: { oldTitle: parseResult.oldTitle, newTitle: parseResult.newTitle },
+            message: confirmMessage.text
+          });
+          setMessages(prev => [...prev, confirmMessage]);
+          response = ''; // Don't add another message
         } else {
           response = String(langResponses.update_help);
         }
@@ -287,16 +308,20 @@ export default function AIAssistant() {
         response = String(langResponses.update_help);
       } else if (action === 'delete') {
         if (parseResult.title) {
-          const deleted = await deleteTask(parseResult.title);
-          if (deleted) {
-            response = typeof langResponses.delete_success === 'function'
-              ? (langResponses.delete_success as Function)(parseResult.title)
-              : String(langResponses.delete_success);
-          } else {
-            response = typeof langResponses.delete_error === 'function'
-              ? (langResponses.delete_error as Function)(parseResult.title)
-              : String(langResponses.delete_error);
-          }
+          // Ask for confirmation first
+          const confirmMessage: Message = {
+            id: (Date.now() + 0.5).toString(),
+            text: `⚠️ Are you sure you want to delete "${parseResult.title}"? Reply with 'yes' to confirm or 'no' to cancel.`,
+            sender: 'bot',
+            timestamp: new Date(),
+          };
+          setPendingAction({
+            type: 'delete',
+            data: { title: parseResult.title },
+            message: confirmMessage.text
+          });
+          setMessages(prev => [...prev, confirmMessage]);
+          response = ''; // Don't add another message
         } else {
           response = String(langResponses.delete_help);
         }
@@ -311,6 +336,14 @@ export default function AIAssistant() {
             ? (langResponses.show_list as Function)(taskList)
             : String(langResponses.show_list);
         }
+      } else if (action === 'who_am_i') {
+        // Get user email from localStorage
+        const userEmail = localStorage.getItem('user_email') || '';
+        if (userEmail) {
+          response = `👤 You are logged in as: ${userEmail}`;
+        } else {
+          response = String(langResponses.who_am_i || "I couldn't find your account information. Please log in again.");
+        }
       } else {
         response = String(langResponses.default);
       }
@@ -319,10 +352,69 @@ export default function AIAssistant() {
       response = 'Sorry, something went wrong. Please try again.';
     }
 
-    return response;
+    return { response, hasPendingAction: false };
   };
 
   const handleSendMessage = async (messageText?: string) => {
+    // If there's a pending confirmation, handle it
+    if (pendingAction) {
+      const text = messageText || inputText;
+      const isConfirm = /^(yes|yeah|yep|confirm|do it|go ahead|haan|ji|han)$/i.test(text);
+      const isCancel = /^(no|nope|cancel|nahi|nah|na)$/i.test(text);
+      
+      if (isConfirm) {
+        // Execute the pending action
+        if (pendingAction.type === 'delete') {
+          const deleted = await deleteTask(pendingAction.data.title);
+          const response = deleted 
+            ? `✅ Done! I've deleted "${pendingAction.data.title}" for you!`
+            : `❌ I couldn't find a task matching "${pendingAction.data.title}". Try "show tasks" to see what you have.`;
+          
+          const botMessage: Message = {
+            id: Date.now().toString(),
+            text: response,
+            sender: 'bot',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, botMessage]);
+        } else if (pendingAction.type === 'update') {
+          const updated = await updateTask(pendingAction.data.oldTitle, pendingAction.data.newTitle);
+          const response = updated
+            ? `✅ Done! I've updated "${pendingAction.data.oldTitle}" to "${pendingAction.data.newTitle}"!`
+            : `❌ I couldn't find a task matching "${pendingAction.data.oldTitle}". Try "show tasks" to see what you have.`;
+          
+          const botMessage: Message = {
+            id: Date.now().toString(),
+            text: response,
+            sender: 'bot',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, botMessage]);
+        }
+      } else if (isCancel) {
+        const botMessage: Message = {
+          id: Date.now().toString(),
+          text: "❌ Action cancelled. What else can I help you with?",
+          sender: 'bot',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, botMessage]);
+      } else {
+        const botMessage: Message = {
+          id: Date.now().toString(),
+          text: "Please confirm with 'yes' or 'no' (or cancel)",
+          sender: 'bot',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, botMessage]);
+      }
+      
+      setPendingAction(null);
+      setInputText('');
+      setIsLoading(false);
+      return;
+    }
+    
     const textToSend = messageText || inputText;
     if (!textToSend.trim() || isLoading) return;
 
@@ -339,17 +431,28 @@ export default function AIAssistant() {
 
     try {
       const parsed = await parseNaturalLanguage(textToSend);
-      const response = await generateAIResponse(textToSend, parsed.language, parsed.action, parsed);
-
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: response,
-        sender: 'bot',
-        timestamp: new Date(),
-        language: parsed.language,
-      };
-
-      setMessages(prev => [...prev, botMessage]);
+      const result = await generateAIResponse(textToSend, parsed.language, parsed.action, parsed);
+      
+      // Handle both string and object responses
+      const responseText = typeof result === 'string' ? result : result.response;
+      const hasPending = typeof result === 'object' && result.hasPendingAction;
+      
+      // Only add bot message if there's no pending action (confirmation is already added)
+      if (!hasPending && responseText) {
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: responseText,
+          sender: 'bot',
+          timestamp: new Date(),
+          language: parsed.language,
+        };
+        setMessages(prev => [...prev, botMessage]);
+      }
+      
+      // If there's a pending confirmation, don't set isLoading to false yet
+      if (!hasPending) {
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error('Chatbot error:', error);
       const errorMessage: Message = {

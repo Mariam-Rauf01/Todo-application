@@ -22,23 +22,98 @@ interface Task {
 export default function FloatingChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: "Hi! I'm your Task Assistant.\n\nCommands:\n- add: task name\n- update: old name -> new name\n- delete: task name\n- done: task name\n- list\n\nType 'help' for more info.",
-      sender: 'bot',
-      timestamp: new Date(),
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+
+  // Get user-specific localStorage key
+  const getChatStorageKey = () => {
+    const uid = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+    return uid ? `chat_history_${uid}` : 'chat_history';
+  };
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(getChatStorageKey());
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          return parsed.map((m: any) => ({
+            ...m,
+            timestamp: new Date(m.timestamp)
+          }));
+        } catch {
+          // If parsing fails, return default
+        }
+      }
     }
-  ]);
+    return [
+      {
+        id: '1',
+        text: "Hi! I'm your AI Task Assistant! 🎉\n\nI understand both English and Roman Urdu/Hindi!\n\n📝 ENGLISH Commands:\n• 'Create task: Buy groceries'\n• 'Show my tasks'\n• 'Delete task: Buy milk'\n• 'Mark task: Finish report as completed'\n• 'List pending tasks'\n\n📝 ROMAN URDU/HINDI Commands:\n• 'Task banao: Grocery shopping'\n• 'Mere tasks dikhao'\n• 'Task hatao: Milk'\n• 'Task complete karo: Report'\n• 'Pending tasks list karo'\n\nTry me in any language! 🤖",
+        sender: 'bot',
+        timestamp: new Date(),
+      }
+    ];
+  });
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem('user_id');
+    const storedUserEmail = localStorage.getItem('user_email');
+    const storedUserName = localStorage.getItem('user_name');
     if (storedUserId) {
       setUserId(storedUserId);
     }
+    if (storedUserEmail) {
+      setUserEmail(storedUserEmail);
+    }
+    if (storedUserName) {
+      setUserName(storedUserName);
+    }
+  }, []);
+
+  // Reload chat history when user changes
+  useEffect(() => {
+    if (userId) {
+      const saved = localStorage.getItem(getChatStorageKey());
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setMessages(parsed.map((m: any) => ({
+            ...m,
+            timestamp: new Date(m.timestamp)
+          })));
+        } catch {}
+      } else {
+        setMessages([{
+          id: '1',
+          text: "Hi! I'm your AI Task Assistant! 🎉\n\nI understand both English and Roman Urdu/Hindi!\n\n📝 ENGLISH Commands:\n• 'Create task: Buy groceries'\n• 'Show my tasks'\n• 'Delete task: Buy milk'\n• 'Mark task: Finish report as completed'\n• 'List pending tasks'\n\n📝 ROMAN URDU/HINDI Commands:\n• 'Task banao: Grocery shopping'\n• 'Mere tasks dikhao'\n• 'Task hatao: Milk'\n• 'Task complete karo: Report'\n• 'Pending tasks list karo'\n\nTry me in any language! 🤖",
+          sender: 'bot',
+          timestamp: new Date(),
+        }]);
+      }
+    }
+  }, [userId]);
+
+  // Save chat history to localStorage whenever messages change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && messages.length > 0) {
+      localStorage.setItem(getChatStorageKey(), JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  // Clear chat when user logs out
+  useEffect(() => {
+    const handleLogout = () => {
+      localStorage.removeItem(getChatStorageKey());
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('user_email');
+      localStorage.removeItem('user_name');
+    };
+    window.addEventListener('logout', handleLogout);
+    return () => window.removeEventListener('logout', handleLogout);
   }, []);
 
   useEffect(() => {
@@ -51,74 +126,164 @@ export default function FloatingChatbot() {
 
   const fetchTasks = async (): Promise<Task[]> => {
     if (!userId) return [];
-    const response = await fetch(`/api/tasks/?user_id=${userId}`);
+    const token = localStorage.getItem('access_token');
+    const response = await fetch(`/api/tasks/`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
     if (response.ok) {
       return await response.json();
     }
     return [];
   };
 
-  const createTask = async (title: string): Promise<Task | null> => {
-    if (!userId) return null;
-    const response = await fetch('/api/tasks/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title,
-        description: null,
-        status: 'pending',
-        priority: 'medium',
-        category: null,
-        due_date: null,
-        user_id: parseInt(userId),
-      }),
-    });
-    if (response.ok) {
-      return await response.json();
-    }
-    return null;
-  };
+  // Save message to database
+  const saveMessageToDb = async (message: string, response: string, sender: string) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const userId = localStorage.getItem('user_id');
+      
+      console.log('Saving message to DB:', { message, response, sender, hasToken: !!token, userId });
+      
+      if (!token) {
+        console.warn('No auth token found, skipping save to DB');
+        return;
+      }
 
-  const deleteTask = async (title: string): Promise<boolean> => {
-    const tasks = await fetchTasks();
-    const task = tasks.find(t => t.title.toLowerCase().includes(title.toLowerCase()));
-    if (task) {
-      const response = await fetch(`/api/tasks/${task.id}`, { method: 'DELETE' });
-      return response.ok;
-    }
-    return false;
-  };
-
-  const updateTask = async (oldTitle: string, newTitle: string): Promise<Task | null> => {
-    const tasks = await fetchTasks();
-    const task = tasks.find(t => t.title.toLowerCase().includes(oldTitle.toLowerCase()));
-    if (task) {
-      const response = await fetch(`/api/tasks/${task.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle }),
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const url = `${backendUrl}/api/chatbot/messages`;
+      
+      console.log('Posting to:', url);
+      
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message,
+          response,
+          sender
+        })
       });
-      if (response.ok) {
-        return await response.json();
+      
+      if (res.ok) {
+        const data = await res.json();
+        console.log('Message saved successfully:', data);
+      } else {
+        const error = await res.text();
+        console.error('Failed to save message:', res.status, error);
+      }
+    } catch (e) {
+      console.error('Error saving message to database:', e);
+    }
+  };
+
+  // Parse JSON blocks from bot response
+  const parseJsonBlocks = (text: string): any[] => {
+    const jsonBlocks: any[] = [];
+    const jsonRegex = /```json\n([\s\S]*?)\n```/g;
+    let match;
+    
+    while ((match = jsonRegex.exec(text)) !== null) {
+      try {
+        const jsonStr = match[1].trim();
+        const parsed = JSON.parse(jsonStr);
+        jsonBlocks.push(parsed);
+      } catch (e) {
+        console.warn('Failed to parse JSON block:', e);
       }
     }
-    return null;
+    
+    return jsonBlocks;
   };
 
-  const completeTask = async (title: string): Promise<Task | null> => {
-    const tasks = await fetchTasks();
-    const task = tasks.find(t => t.title.toLowerCase().includes(title.toLowerCase()));
-    if (task) {
-      const response = await fetch(`/api/tasks/${task.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'completed' }),
-      });
-      if (response.ok) {
-        return await response.json();
+  // Execute actions from JSON blocks
+  const executeActions = async (actions: any[]) => {
+    let refresh = false;
+    const token = localStorage.getItem('access_token');
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
+    for (const action of actions) {
+      try {
+        switch (action.action) {
+          case 'add':
+            // Task already created by backend, just refresh
+            refresh = true;
+            console.log('✅ Task created via backend, will refresh tasks list');
+            break;
+
+          case 'update':
+            if (action.task_id && action.updates) {
+              const response = await fetch(`${backendUrl}/api/tasks/${action.task_id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(action.updates)
+              });
+              
+              if (!response.ok) {
+                console.error('Failed to update task:', response.status);
+              }
+              refresh = true;
+            }
+            break;
+
+          case 'delete':
+            if (action.task_id) {
+              const response = await fetch(`${backendUrl}/api/tasks/${action.task_id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+              
+              if (!response.ok) {
+                console.error('Failed to delete task:', response.status);
+              }
+              refresh = true;
+            }
+            break;
+
+          case 'complete':
+            if (action.task_id) {
+              const response = await fetch(`${backendUrl}/api/tasks/${action.task_id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: 'completed' })
+              });
+              
+              if (!response.ok) {
+                console.error('Failed to complete task:', response.status);
+              }
+              refresh = true;
+            }
+            break;
+
+          case 'list':
+            // Just display, no DB action needed
+            console.log('📋 Listing tasks');
+            break;
+            
+          default:
+            console.log('Unknown action:', action.action);
+        }
+      } catch (e) {
+        console.error('❌ Failed to execute action:', action, e);
       }
     }
-    return null;
+
+    if (refresh) {
+      console.log('🔄 Refreshing tasks list...');
+      window.dispatchEvent(new Event("refresh-tasks"));
+    }
   };
 
   const handleSendMessage = async () => {
@@ -137,110 +302,37 @@ export default function FloatingChatbot() {
     setIsLoading(true);
 
     try {
-      const lower = text.toLowerCase();
       let response = '';
-      let refresh = false;
 
-      // Help command
-      if (lower === 'help') {
-        response = `COMMANDS:\n\n1. Add task:\n   add: Buy milk\n   add: Pay bills\n\n2. Update task:\n   update: old -> new\n   update: milk -> bread\n\n3. Delete task:\n   delete: Buy milk\n\n4. Mark done:\n   done: Buy milk\n   complete: Buy milk\n\n5. List tasks:\n   list\n   show\n   tasks\n\nExamples:\nadd: Meeting at 3\ndelete: Meeting\nupdate: Meeting -> Call\ndone: Call`;
-      }
-      // Add task
-      else if (lower.startsWith('add:') || lower.startsWith('create:') || lower.startsWith('new:')) {
-        const title = text.substring(text.indexOf(':') + 1).trim();
-        if (title) {
-          const task = await createTask(title);
-          if (task) {
-            response = `Added: "${task.title}"`;
-            refresh = true;
-          } else {
-            response = 'Error: Could not add task';
-          }
-        } else {
-          response = 'Usage: add: Task name';
-        }
-      }
-      // Update task
-      else if (lower.startsWith('update:') || lower.startsWith('edit:') || lower.startsWith('change:')) {
-        const content = text.substring(text.indexOf(':') + 1).trim();
-        const arrowIndex = content.indexOf('->');
-        if (arrowIndex !== -1) {
-          const oldTitle = content.substring(0, arrowIndex).trim();
-          const newTitle = content.substring(arrowIndex + 2).trim();
-          if (oldTitle && newTitle) {
-            const task = await updateTask(oldTitle, newTitle);
-            if (task) {
-              response = `Updated: "${oldTitle}" -> "${task.title}"`;
-              refresh = true;
-            } else {
-              response = `Could not find task: "${oldTitle}"`;
-            }
-          } else {
-            response = 'Usage: update: old name -> new name';
-          }
-        } else {
-          response = 'Use arrow: update: old -> new\nexample: update: milk -> bread';
-        }
-      }
-      // Delete task
-      else if (lower.startsWith('delete:') || lower.startsWith('remove:') || lower.startsWith('cancel:')) {
-        const title = text.substring(text.indexOf(':') + 1).trim();
-        if (title) {
-          const deleted = await deleteTask(title);
-          if (deleted) {
-            response = `Deleted: "${title}"`;
-            refresh = true;
-          } else {
-            response = `Could not find task: "${title}"`;
-          }
-        } else {
-          response = 'Usage: delete: Task name';
-        }
-      }
-      // Complete task
-      else if (lower.startsWith('done:') || lower.startsWith('complete:') || lower.startsWith('finish:')) {
-        const title = text.substring(text.indexOf(':') + 1).trim();
-        if (title) {
-          const task = await completeTask(title);
-          if (task) {
-            response = `Done! "${task.title}" marked complete`;
-            refresh = true;
-          } else {
-            response = `Could not find task: "${title}"`;
-          }
-        } else {
-          response = 'Usage: done: Task name';
-        }
-      }
-      // List tasks
-      else if (lower === 'list' || lower === 'show' || lower === 'tasks' || lower === 'show tasks') {
-        const tasks = await fetchTasks();
-        if (tasks.length === 0) {
-          response = 'No tasks yet.\n\nAdd one: add: Task name';
-        } else {
-          const pending = tasks.filter(t => t.status !== 'completed');
-          const completed = tasks.filter(t => t.status === 'completed');
+      // ALWAYS use backend AI chatbot for ALL commands
+      try {
+        const token = localStorage.getItem('access_token');
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
+        const aiResponse = await fetch(`${backendUrl}/api/chatbot/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ message: text })
+        });
+
+        if (aiResponse.ok) {
+          const data = await aiResponse.json();
+          response = data.response;
           
-          response = 'TASKS:\n\n';
-          if (pending.length > 0) {
-            response += '[ ] Pending:\n';
-            pending.forEach((t, i) => {
-              response += `${i + 1}. ${t.title}\n`;
-            });
+          // Parse and execute JSON blocks from response
+          const jsonBlocks = parseJsonBlocks(response);
+          if (jsonBlocks.length > 0) {
+            await executeActions(jsonBlocks);
           }
-          if (completed.length > 0) {
-            if (pending.length > 0) response += '\n';
-            response += '[X] Completed:\n';
-            completed.forEach((t, i) => {
-              response += `${i + 1}. ${t.title}\n`;
-            });
-          }
-          response += `\nTotal: ${pending.length} pending, ${completed.length} done`;
+        } else {
+          response = "I'm here to help! 😊 You can ask me to create tasks, show tasks, delete tasks, or get your info. Try in Roman Urdu too!";
         }
-      }
-      // Unknown command
-      else {
-        response = `I don't understand: "${text}"\n\nType "help" for commands.`;
+      } catch (error) {
+        console.error("AI Chat error:", error);
+        response = "I'm here to help! 😊 You can ask me to create tasks, show tasks, delete tasks, or get your info. Try in Roman Urdu too!";
       }
 
       const botMessage: Message = {
@@ -251,11 +343,10 @@ export default function FloatingChatbot() {
       };
 
       setMessages(prev => [...prev, botMessage]);
-      
-      if (refresh) {
-        window.dispatchEvent(new Event("refresh-tasks"));
-      }
-      
+
+      // Save BOTH user and bot messages to database
+      saveMessageToDb(text, response, 'user');
+
     } catch (error) {
       console.error("Chatbot error:", error);
       const botMessage: Message = {
@@ -265,6 +356,9 @@ export default function FloatingChatbot() {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, botMessage]);
+      
+      // Save error message to database
+      saveMessageToDb(text, 'Error: Something went wrong', 'user');
     } finally {
       setIsLoading(false);
     }
@@ -297,28 +391,46 @@ export default function FloatingChatbot() {
       {isOpen && (
         <div className="fixed bottom-28 right-6 z-50 w-80 max-w-[calc(100vw-2rem)] animate-scale-in">
           <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
-            
+
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-3">
               <div className="flex items-center justify-between">
                 <span className="text-white font-semibold">✨ Task Assistant</span>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="text-white/80 hover:text-white"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem(getChatStorageKey());
+                      setMessages([{
+                        id: Date.now().toString(),
+                        text: "Chat cleared! How can I help you?",
+                        sender: 'bot',
+                        timestamp: new Date()
+                      }]);
+                    }}
+                    className="text-white/80 hover:text-white text-xs"
+                    title="Clear chat"
+                  >
+                    🗑️
+                  </button>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="text-white/80 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Quick Commands */}
             <div className="bg-purple-50 px-2 py-2 border-b border-purple-100">
               <div className="flex flex-wrap gap-1">
-                <button onClick={() => setInputText('add: ')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">+ Add</button>
+                <button onClick={() => setInputText('who am i')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">👤 Profile</button>
+                <button onClick={() => setInputText('create task: ')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">+ Add</button>
                 <button onClick={() => setInputText('update: -> ')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">~ Edit</button>
-                <button onClick={() => setInputText('delete: ')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">- Delete</button>
-                <button onClick={() => setInputText('done: ')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">✓ Done</button>
-                <button onClick={() => setInputText('list')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">📋 List</button>
+                <button onClick={() => setInputText('delete task: ')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">- Delete</button>
+                <button onClick={() => setInputText('complete task: ')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">✓ Done</button>
+                <button onClick={() => setInputText('show my tasks')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">📋 List</button>
               </div>
             </div>
 

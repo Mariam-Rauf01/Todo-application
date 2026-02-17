@@ -62,5 +62,30 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+# Login Response with User Info
+class TokenWithUser(BaseModel):
+    access_token: str
+    token_type: str
+    email: str
+    full_name: str
+    user_id: int
+
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+# Chat Message Schemas
+class ChatMessageCreate(BaseModel):
+    message: str
+    response: Optional[str] = None
+    sender: str = "user"
+
+class ChatMessage(BaseModel):
+    id: int
+    user_id: int
+    message: str
+    response: Optional[str] = None
+    sender: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

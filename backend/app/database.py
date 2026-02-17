@@ -1,30 +1,24 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# Neon PostgreSQL Database URL
+# This is the production database connection string
+SQLALCHEMY_DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
+)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require")
-
-# Configure engine with SSL support for Neon PostgreSQL
-connect_args = {}
-if "neon.tech" in DATABASE_URL or "sslmode" in DATABASE_URL:
-    connect_args["sslmode"] = "require"
-
-try:
-    engine = create_engine(
-        DATABASE_URL,
-        pool_pre_ping=True,
-        pool_size=5,
-        max_overflow=10,
-        pool_recycle=300,
-    )
-except Exception as e:
-    print(f"Warning: Could not create database engine: {e}")
-    print("Using fallback database URL")
-    engine = create_engine("postgresql://localhost/todo_app", pool_pre_ping=True)
+# Create database engine with connection pooling for Neon
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_pre_ping=True,  # Enable connection health checks
+    pool_size=10,  # Number of connections to keep open
+    max_overflow=20,  # Max connections beyond pool_size
+    pool_recycle=300,  # Recycle connections after 5 minutes
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

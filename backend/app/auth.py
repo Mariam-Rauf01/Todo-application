@@ -28,91 +28,89 @@ def get_db():
 
 @router.post("/signup", response_model=schemas.User)
 def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    try:
-        # Check if user already exists
-        existing_user = db.query(models.User).filter(models.User.email == user.email).first()
-        if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
-            )
-
-        # Hash the password
-        hashed_password = utils.get_password_hash(user.password)
-
-        # Create new user
-        db_user = models.User(
-            email=user.email,
-            full_name=user.full_name,
-            hashed_password=hashed_password
+    # Check if user already exists
+    existing_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
         )
 
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
+    # Hash the password
+    hashed_password = utils.get_password_hash(user.password)
 
-        # Publish user created event to Kafka
-        try:
-            if kafka_service:
-                event = Event(
-                    event_type=EventType.USER_CREATED,
-                    user_id=db_user.id,
-                    entity_id=db_user.id,
-                    entity_data={
-                        "email": db_user.email,
-                        "full_name": db_user.full_name
-                    }
-                )
-                kafka_service.send_message("user_events", event.dict())
-                logger.info(f"Published user created event for user ID: {db_user.id}")
-        except Exception as e:
-            logger.error(f"Failed to publish user created event: {e}")
+    # Create new user
+    db_user = models.User(
+        email=user.email,
+        full_name=user.full_name,
+        hashed_password=hashed_password
+    )
 
-        return db_user
-    except Exception as db_error:
-        logger.error(f"Database error during signup: {db_error}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(db_error)}")
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
 
-@router.post("/login", response_model=schemas.Token)
+    # Publish user created event to Kafka
+    try:
+        if kafka_service:
+            event = Event(
+                event_type=EventType.USER_CREATED,
+                user_id=db_user.id,
+                entity_id=db_user.id,
+                entity_data={
+                    "email": db_user.email,
+                    "full_name": db_user.full_name
+                }
+            )
+            kafka_service.send_message("user_events", event.dict())
+            logger.info(f"Published user created event for user ID: {db_user.id}")
+    except Exception as e:
+        logger.error(f"Failed to publish user created event: {e}")
+
+    return db_user
+
+@router.post("/login", response_model=schemas.TokenWithUser)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    try:
-        # Find user by email
-        user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    # Find user by email
+    user = db.query(models.User).filter(models.User.email == form_data.username).first()
 
-        if not user or not utils.verify_password(form_data.password, user.hashed_password):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # Create access token
-        access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = utils.create_access_token(
-            data={"sub": user.email}, expires_delta=access_token_expires
+    if not user or not utils.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-        # Publish user login event to Kafka
-        try:
-            if kafka_service:
-                event = Event(
-                    event_type=EventType.USER_LOGIN,
-                    user_id=user.id,
-                    entity_id=user.id,
-                    entity_data={
-                        "email": user.email,
-                        "full_name": user.full_name
-                    }
-                )
-                kafka_service.send_message("user_events", event.dict())
-                logger.info(f"Published user login event for user ID: {user.id}")
-        except Exception as e:
-            logger.error(f"Failed to publish user login event: {e}")
+    # Create access token
+    access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = utils.create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
 
-        return {"access_token": access_token, "token_type": "bearer"}
-    except Exception as db_error:
-        logger.error(f"Database error during login: {db_error}")
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Database error: {str(db_error)}")
+    # Publish user login event to Kafka
+    try:
+        if kafka_service:
+            event = Event(
+                event_type=EventType.USER_LOGIN,
+                user_id=user.id,
+                entity_id=user.id,
+                entity_data={
+                    "email": user.email,
+                    "full_name": user.full_name
+                }
+            )
+            kafka_service.send_message("user_events", event.dict())
+            logger.info(f"Published user login event for user ID: {user.id}")
+    except Exception as e:
+        logger.error(f"Failed to publish user login event: {e}")
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "email": user.email,
+        "full_name": user.full_name,
+        "user_id": user.id
+    }
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(

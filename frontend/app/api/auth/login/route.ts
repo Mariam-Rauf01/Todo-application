@@ -39,7 +39,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       access_token: tokenData.access_token,
       token_type: tokenData.token_type,
-      email: email,
+      email: tokenData.email || email,
+      full_name: tokenData.full_name || email.split('@')[0],
+      user_id: tokenData.user_id,
       message: 'Login successful'
     }, { status: 200 });
 

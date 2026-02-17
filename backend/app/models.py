@@ -35,3 +35,14 @@ class Task(Base):
     recurrence_interval = Column(Integer, default=1)  # How often to repeat (e.g., every 2 weeks)
     parent_task_id = Column(Integer, nullable=True)  # For recurring tasks, reference to original task
     next_occurrence = Column(DateTime(timezone=True), nullable=True)  # When the next occurrence is due
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    message = Column(Text, nullable=False)
+    response = Column(Text, nullable=True)
+    sender = Column(String, default="user")  # user or bot
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

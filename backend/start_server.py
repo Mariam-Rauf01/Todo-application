@@ -13,7 +13,7 @@ load_dotenv()
 
 # Import models FIRST to register them with Base
 from app import models
-from app import auth, tasks, legacy_routes
+from app import auth, tasks, legacy_routes, chatbot
 from app.database import engine, Base
 
 # Create database tables
@@ -39,6 +39,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(legacy_routes.router, prefix="/api/tasks", tags=["legacy"])
+app.include_router(chatbot.router, prefix="/api/chatbot", tags=["chatbot"])
 
 @app.get("/")
 def read_root():

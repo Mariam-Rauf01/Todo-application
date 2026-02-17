@@ -1,19 +1,30 @@
+"""
+Create all database tables in Neon PostgreSQL
+Run this script to initialize your database
+"""
 from app.database import engine, Base
 from app import models
 
-print("Checking if models are registered with Base...")
-print("Registry keys:", list(Base.registry._class_registry.keys()))
+def create_tables():
+    print("Creating database tables in Neon PostgreSQL...")
+    print(f"Database URL: {engine.url}")
+    
+    try:
+        # Create all tables
+        Base.metadata.create_all(bind=engine)
+        print("SUCCESS: Database tables created!")
+        print("\nTables created:")
+        print("  - users (for user accounts)")
+        print("  - tasks (for todo tasks)")
+        print("  - chat_messages (for chat history)")
+        print("\nYour Neon database is ready!")
+    except Exception as e:
+        print(f"ERROR creating tables: {e}")
+        print("\nMake sure:")
+        print("  1. Your DATABASE_URL is correct in .env file")
+        print("  2. You have internet connection")
+        print("  3. Neon database is accessible")
+        raise
 
-# Create all tables
-print("\nCreating database tables...")
-Base.metadata.create_all(bind=engine)
-print("Database tables created successfully!")
-
-# Verify tables exist
-from sqlalchemy import inspect
-inspector = inspect(engine)
-tables = inspector.get_table_names()
-print(f"Created tables: {tables}")
-
-# Let's also check what tables are defined in the metadata
-print(f"Tables in metadata: {list(Base.metadata.tables.keys())}")
+if __name__ == "__main__":
+    create_tables()

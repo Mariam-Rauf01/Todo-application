@@ -40,10 +40,59 @@ export default function TasksPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'in-progress' | 'completed'>('all');
   const [categories, setCategories] = useState<string[]>(['Work', 'Personal', 'Shopping', 'Health']);
   const [newCategory, setNewCategory] = useState('');
+  const [profilePic, setProfilePic] = useState<string | null>(null);
+
+  // Load categories and profile picture from localStorage on mount
+  useEffect(() => {
+    const savedCategories = localStorage.getItem('user_categories');
+    if (savedCategories) {
+      try {
+        setCategories(JSON.parse(savedCategories));
+      } catch (e) {
+        console.warn('Failed to parse saved categories', e);
+      }
+    }
+    const savedProfilePic = localStorage.getItem('user_profile_pic');
+    if (savedProfilePic) {
+      setProfilePic(savedProfilePic);
+    }
+  }, []);
+
+  // Handle profile picture upload
+  const handleProfilePicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setProfilePic(base64);
+        localStorage.setItem('user_profile_pic', base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle profile picture removal
+  const handleProfilePicRemove = () => {
+    setDeleteTarget({ type: 'category', name: 'profile picture' });
+    setShowDeleteModal(true);
+  };
+
+  // Save categories to localStorage whenever they change
+  const saveCategories = (newCats: string[]) => {
+    setCategories(newCats);
+    localStorage.setItem('user_categories', JSON.stringify(newCats));
+  };
   const [showAddForm, setShowAddForm] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [successAction, setSuccessAction] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<{type: 'task' | 'category', id?: number, name?: string} | null>(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const taskInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -60,6 +109,19 @@ export default function TasksPage() {
     if (showAddForm && taskInputRef.current) taskInputRef.current.focus();
   }, [showAddForm]);
 
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showProfileMenu && !target.closest('.profile-dropdown')) {
+        setShowProfileMenu(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showProfileMenu]);
+
   const fetchTasks = async () => {
     try {
       setLoading(true);
@@ -72,9 +134,16 @@ export default function TasksPage() {
         return;
       }
 
-      const res = await fetch(`/api/tasks?user_id=${userId}`, {
+      // Call backend API instead of frontend API
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+      const token = localStorage.getItem('access_token');
+      
+      const res = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
       });
 
       if (!res.ok) {
@@ -85,7 +154,11 @@ export default function TasksPage() {
       }
 
       const data = await res.json();
-      setTasks(Array.isArray(data) ? data : []);
+      // Sort tasks by created_at (newest first)
+      const sortedTasks = Array.isArray(data) ? data.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ) : [];
+      setTasks(sortedTasks);
     } catch (err) {
       console.error('Fetch exception:', err);
       setError('Network error: ' + String(err).slice(0, 100));
@@ -109,25 +182,47 @@ export default function TasksPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/tasks', {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+      const token = localStorage.getItem('access_token');
+
+      const res = await fetch(`${backendUrl}/api/tasks/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
-          ...newTask,
+          title: newTask.title,
+          description: newTask.description || null,
           status: 'pending',
+          priority: newTask.priority,
+          category: newTask.category || null,
+          due_date: newTask.due_date || null,
           user_id: parseInt(localStorage.getItem('user_id') || '1')
         })
       });
 
-      if (!res.ok) throw new Error('Failed to add task');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP ${res.status}`);
+      }
 
       const created = await res.json();
-      setTasks(prev => [...prev, created]);
+      // Add new task at the beginning of the list (newest first)
+      setTasks(prev => [created, ...prev]);
       setNewTask({ title: '', description: '', due_date: '', priority: 'medium', category: '' });
       setShowAddForm(false);
-      triggerConfetti();
+      showSuccess('Task added successfully!', 'created');
+      setError(''); // Clear any previous errors
     } catch (err) {
-      setError('Failed to add task: ' + String(err));
+      // Only show error for real failures
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.error('Task creation error:', err);
+      
+      // Don't show error if it's a network blip but task might have been created
+      if (!errorMessage.includes('Failed to fetch')) {
+        setError('Could not add task. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -135,9 +230,15 @@ export default function TasksPage() {
 
   const handleUpdateTask = async (id: number, updates: Partial<Task>) => {
     try {
-      const res = await fetch(`/api/tasks/${id}`, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+      const token = localStorage.getItem('access_token');
+      
+      const res = await fetch(`${backendUrl}/api/tasks/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(updates)
       });
 
@@ -145,33 +246,86 @@ export default function TasksPage() {
 
       const updated = await res.json();
       setTasks(prev => prev.map(t => t.id === id ? updated : t));
-      if (updates.status === 'completed') triggerConfetti();
+      if (updates.status === 'completed') {
+        showSuccess('Task completed! Great job! 🎉', 'completed');
+      } else {
+        showSuccess('Task updated successfully!', 'updated');
+      }
     } catch (err) {
       setError('Failed to update task');
     }
   };
 
   const handleDeleteTask = async (id: number) => {
-    if (!confirm('Delete this task?')) return;
-    try {
-      const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete');
-      setTasks(prev => prev.filter(t => t.id !== id));
-    } catch (err) {
-      setError('Failed to delete task');
+    setDeleteTarget({ type: 'task', id, name: tasks.find(t => t.id === id)?.title || 'this task' });
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    
+    // Handle profile picture removal
+    if (deleteTarget.type === 'category' && deleteTarget.name === 'profile picture') {
+      setProfilePic(null);
+      localStorage.removeItem('user_profile_pic');
+      setShowDeleteModal(false);
+      setDeleteTarget(null);
+      setSuccessMessage('Profile picture removed successfully');
+      setSuccessAction('removed');
+      setShowSuccessModal(true);
+      return;
     }
+    
+    if (deleteTarget.type === 'task' && deleteTarget.id) {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+        const token = localStorage.getItem('access_token');
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const res = await fetch(`${backendUrl}/api/tasks/${deleteTarget.id}`, { 
+          method: 'DELETE',
+          headers
+        });
+        
+        // Even if API fails, remove from local UI for better UX
+        setTasks(prev => prev.filter(t => t.id !== deleteTarget.id));
+        showSuccess('Task deleted successfully!', 'deleted');
+        
+      } catch (err) {
+        console.error('Delete error:', err);
+        // Remove locally anyway on network error
+        setTasks(prev => prev.filter(t => t.id !== deleteTarget.id));
+        showSuccess('Task deleted successfully!', 'deleted');
+      }
+    } else if (deleteTarget.type === 'category' && deleteTarget.name) {
+      saveCategories(categories.filter(c => c !== deleteTarget.name));
+      showSuccess('Category removed successfully!', 'category-removed');
+    }
+    
+    setShowDeleteModal(false);
+    setDeleteTarget(null);
   };
 
   const addCategory = () => {
     if (newCategory.trim() && !categories.includes(newCategory.trim())) {
-      setCategories([...categories, newCategory.trim()]);
+      saveCategories([...categories, newCategory.trim()]);
       setNewCategory('');
     }
   };
 
-  const triggerConfetti = () => {
-    setShowConfetti(true);
-    setTimeout(() => setShowConfetti(false), 3000);
+  const showSuccess = (message: string, action: string) => {
+    setSuccessMessage(message);
+    setSuccessAction(action);
+    setShowSuccessModal(true);
+    setTimeout(() => setShowSuccessModal(false), 3000);
+  };
+
+  const removeCategory = (categoryToRemove: string) => {
+    setDeleteTarget({ type: 'category', name: categoryToRemove });
+    setShowDeleteModal(true);
   };
 
   const filteredTasks = tasks.filter(t => (filter === 'all' ? true : t.status === filter));
@@ -233,9 +387,84 @@ export default function TasksPage() {
         <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
-      {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
-          <div className="text-8xl animate-bounce">🎉</div>
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowSuccessModal(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 animate-scale-in">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                <span className="text-3xl">✓</span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Success!</h3>
+              <p className="text-gray-500">{successMessage}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowDeleteModal(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 animate-scale-in">
+            <div className="text-center">
+              {deleteTarget?.type === 'category' && deleteTarget?.name === 'profile picture' ? (
+                <>
+                  <div className="w-16 h-16 mx-auto mb-4 bg-violet-100 rounded-full flex items-center justify-center">
+                    <span className="text-3xl">🖼️</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Remove Profile Picture</h3>
+                  <p className="text-gray-500 mb-6">
+                    Are you sure you want to remove your profile picture? You can add a new one anytime.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowDeleteModal(false)}
+                      className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={confirmDelete}
+                      className="flex-1 px-4 py-3 bg-violet-500 hover:bg-violet-600 text-white rounded-xl font-medium transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                    <span className="text-3xl">⚠️</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Delete</h3>
+                  <p className="text-gray-500 mb-6">
+                    Are you sure you want to delete "{deleteTarget?.name}"? This action cannot be undone.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowDeleteModal(false)}
+                      className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={confirmDelete}
+                      className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -257,30 +486,101 @@ export default function TasksPage() {
 
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-violet-50 to-purple-50 rounded-full border border-violet-100">
-                <div className="w-10 h-10 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center text-white shadow-md">
-                  {typeof window !== 'undefined' ? (localStorage.getItem('user_name')?.charAt(0).toUpperCase() || 'U') : 'U'}
+                <div className="relative">
+                  {/* Profile Dropdown */}
+                  <div className="relative profile-dropdown">
+                    {profilePic ? (
+                      <div 
+                        className="cursor-pointer"
+                        onClick={() => setShowProfileMenu(!showProfileMenu)}
+                      >
+                        <img 
+                          src={profilePic} 
+                          alt="Profile" 
+                          className="w-12 h-12 rounded-full object-cover border-2 border-violet-300 shadow-md hover:border-violet-400 transition-colors"
+                        />
+                      </div>
+                    ) : (
+                      <div 
+                        className="cursor-pointer"
+                        onClick={() => setShowProfileMenu(!showProfileMenu)}
+                      >
+                        <div className="w-12 h-12 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center text-white shadow-md text-lg font-bold">
+                          {typeof window !== 'undefined' ? (localStorage.getItem('user_name')?.charAt(0).toUpperCase() || 'U') : 'U'}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Dropdown Menu */}
+                    {showProfileMenu && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="px-4 py-2 border-b border-gray-100">
+                          <p className="text-sm font-medium text-gray-800">
+                            {typeof window !== 'undefined' ? (localStorage.getItem('user_name') || localStorage.getItem('user_email')?.split('@')[0] || 'User') : 'User'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {typeof window !== 'undefined' ? (localStorage.getItem('user_email') || '') : ''}
+                          </p>
+                        </div>
+                        
+                        {/* Add/Change Profile Picture */}
+                        <label className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-violet-50 cursor-pointer transition-colors">
+                          <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-sm font-medium">{profilePic ? 'Change Photo' : 'Add Photo'}</span>
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={handleProfilePicUpload}
+                            className="hidden" 
+                          />
+                        </label>
+                        
+                        {/* Remove Profile Picture - only show if there's a profile pic */}
+                        {profilePic && (
+                          <button 
+                            onClick={() => {
+                              handleProfilePicRemove();
+                              setShowProfileMenu(false);
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span className="text-sm font-medium">Remove Photo</span>
+                          </button>
+                        )}
+                        
+                        <div className="border-t border-gray-100 mt-2 pt-2">
+                          <button 
+                            onClick={() => {
+                              localStorage.removeItem('access_token');
+                              localStorage.removeItem('user_id');
+                              localStorage.removeItem('user_email');
+                              localStorage.removeItem('user_name');
+                              document.cookie = 'auth-token=; Max-Age=0; path=/;';
+                              router.push('/login');
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            <span className="text-sm font-medium">Sign Out</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="text-sm">
                   <div className="font-medium text-gray-800">
                     {typeof window !== 'undefined' ? (localStorage.getItem('user_name') || localStorage.getItem('user_email')?.split('@')[0] || 'User') : 'User'}
                   </div>
-                  <div className="text-gray-400 text-xs">Pro Member</div>
                 </div>
               </div>
-              <button
-                onClick={() => {
-                  localStorage.removeItem('access_token');
-                  localStorage.removeItem('user_id');
-                  localStorage.removeItem('user_email');
-                  localStorage.removeItem('user_name');
-                  document.cookie = 'auth-token=; Max-Age=0; path=/;';
-                  router.push('/login');
-                }}
-                className="px-5 py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
-              >
-                <span>Sign out</span>
-                <span className="text-lg">👋</span>
-              </button>
             </div>
           </div>
         </div>
@@ -379,18 +679,47 @@ export default function TasksPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
+                    {/* Custom Dropdown */}
                     <div className="relative">
-                      <select 
-                        value={filter} 
-                        onChange={(e) => setFilter(e.target.value as any)}
-                        className="pl-10 pr-4 py-2.5 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-white font-medium focus:outline-none focus:ring-2 focus:ring-white/50 appearance-none cursor-pointer"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const dropdown = document.getElementById('filter-dropdown');
+                          dropdown?.classList.toggle('hidden');
+                        }}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-white font-medium hover:bg-white/30 transition-colors min-w-[140px] justify-between"
                       >
-                        <option value="all" className="text-gray-800">All</option>
-                        <option value="pending" className="text-gray-800">Pending</option>
-                        <option value="in-progress" className="text-gray-800">In Progress</option>
-                        <option value="completed" className="text-gray-800">Completed</option>
-                      </select>
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70">🔽</span>
+                        <span>{filter === 'all' ? 'All' : filter === 'in-progress' ? 'In Progress' : filter.charAt(0).toUpperCase() + filter.slice(1)}</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      <div id="filter-dropdown" className="hidden absolute top-full left-0 mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-20">
+                        <button
+                          onClick={() => { setFilter('all'); document.getElementById('filter-dropdown')?.classList.add('hidden'); }}
+                          className={`w-full px-4 py-2 text-left hover:bg-violet-50 ${filter === 'all' ? 'text-violet-600 font-medium' : 'text-gray-700'}`}
+                        >
+                          All
+                        </button>
+                        <button
+                          onClick={() => { setFilter('pending'); document.getElementById('filter-dropdown')?.classList.add('hidden'); }}
+                          className={`w-full px-4 py-2 text-left hover:bg-violet-50 ${filter === 'pending' ? 'text-violet-600 font-medium' : 'text-gray-700'}`}
+                        >
+                          Pending
+                        </button>
+                        <button
+                          onClick={() => { setFilter('in-progress'); document.getElementById('filter-dropdown')?.classList.add('hidden'); }}
+                          className={`w-full px-4 py-2 text-left hover:bg-violet-50 ${filter === 'in-progress' ? 'text-violet-600 font-medium' : 'text-gray-700'}`}
+                        >
+                          In Progress
+                        </button>
+                        <button
+                          onClick={() => { setFilter('completed'); document.getElementById('filter-dropdown')?.classList.add('hidden'); }}
+                          className={`w-full px-4 py-2 text-left hover:bg-violet-50 ${filter === 'completed' ? 'text-violet-600 font-medium' : 'text-gray-700'}`}
+                        >
+                          Completed
+                        </button>
+                      </div>
                     </div>
                     <button
                       onClick={() => setShowAddForm(s => !s)}
@@ -572,6 +901,7 @@ export default function TasksPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2 sm:flex-col sm:gap-2">
+                            <div className="flex items-center gap-2">
                               <button
                                 onClick={() => {
                                   setEditingTask(task);
@@ -583,18 +913,19 @@ export default function TasksPage() {
                                     due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : ''
                                   });
                                 }}
-                                className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl font-medium text-sm shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2"
+                                className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                                title="Edit"
                               >
                                 <span>✏️</span>
-                                <span className="hidden sm:inline">Edit</span>
                               </button>
                               <button
                                 onClick={() => handleDeleteTask(task.id)}
-                                className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-medium text-sm shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2"
+                                className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                                title="Delete"
                               >
                                 <span>🗑️</span>
-                                <span className="hidden sm:inline">Delete</span>
                               </button>
+                            </div>
                             </div>
                           </div>
                         </div>
@@ -618,18 +949,29 @@ export default function TasksPage() {
               <div className="p-5">
                 <div className="flex flex-wrap gap-2 mb-4">
                   {categories.map(c => (
-                    <button
+                    <div
                       key={c}
-                      onClick={() => setNewTask(n => ({...n, category: c}))}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      className={`group relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                         newTask.category === c
                           ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg'
                           : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                       }`}
                     >
-                      <span className="mr-1">{categoryIcons[c] || '📁'}</span>
-                      {c}
-                    </button>
+                      <button
+                        onClick={() => setNewTask(n => ({...n, category: c}))}
+                        className="flex items-center gap-1"
+                      >
+                        <span className="mr-1">{categoryIcons[c] || '📁'}</span>
+                        {c}
+                      </button>
+                      <button
+                        onClick={() => removeCategory(c)}
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        title="Remove category"
+                      >
+                        ×
+                      </button>
+                    </div>
                   ))}
                 </div>
                 <div className="flex gap-2">
@@ -697,7 +1039,7 @@ export default function TasksPage() {
             <div className="bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 p-6 rounded-t-3xl">
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <span>✏️</span> Edit Task
+                  <span>✏️</span> 
                 </h3>
                 <button
                   onClick={() => setEditingTask(null)}

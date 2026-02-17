@@ -34,12 +34,15 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
     // }
 
     try {
+      const userId = localStorage.getItem('user_id');
+      
       const taskData = {
         title,
         description: description || null,
         due_date: dueDate || null,
         priority,
         category: category || null,
+        user_id: userId ? parseInt(userId) : null,
       };
 
       let response;
@@ -151,13 +154,26 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
           <label htmlFor="category" className="block text-sm font-medium text-gray-700">
             Category
           </label>
-          <input
-            type="text"
-            id="category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          />
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="e.g., Work, Personal, Shopping"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+            {category && (
+              <button
+                type="button"
+                onClick={() => setCategory('')}
+                className="mt-1 px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 text-sm"
+                title="Clear category"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-end space-x-3">

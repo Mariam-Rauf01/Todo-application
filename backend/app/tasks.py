@@ -109,8 +109,9 @@ def create_task(
             logger.info(f"Set next occurrence for recurring task {db_task.id} to {next_occurrence}")
 
     # Schedule notifications for due date
-    if db_task.due_date:
-        notification_service.schedule_task_due_notifications(db, db_task, current_user.id)
+    # Temporarily disabled - notifications table not created yet
+    # if db_task.due_date:
+    #     notification_service.schedule_task_due_notifications(db, db_task, current_user.id)
 
     # Publish task created event to Kafka
     try:
