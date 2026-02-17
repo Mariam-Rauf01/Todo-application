@@ -7,6 +7,12 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Disable SWC for better compatibility
+  swcMinify: true,
+  // Experimental features for better build stability
+  experimental: {
+    serverComponentsExternalPackages: ['pg'],
+  },
 }
 
 module.exports = nextConfig
