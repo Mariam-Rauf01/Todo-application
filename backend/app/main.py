@@ -21,7 +21,12 @@ app = FastAPI(title="AI-Powered Todo Web Application")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific frontend URL
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "https://mariam-rauf01-taskmate-todo-app.hf.space",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
