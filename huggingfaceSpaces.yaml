@@ -1,0 +1,10 @@
+---
+title: AI Task Manager
+emoji: ✅
+colorFrom: blue
+colorTo: green
+sdk: docker
+sdk_version: ""
+app_file: Dockerfile
+pinned: false
+---
