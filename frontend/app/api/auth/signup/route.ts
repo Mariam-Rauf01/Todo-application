@@ -36,9 +36,22 @@ export async function POST(request: NextRequest) {
     });
 
     if (!signupResponse.ok) {
-      const errorData = await signupResponse.json();
+      // Try to parse as JSON, but handle non-JSON responses
+      const contentType = signupResponse.headers.get('content-type');
+      let errorMessage = 'Signup failed';
+      
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await signupResponse.json();
+        errorMessage = errorData.detail || errorData.error || 'Signup failed';
+      } else {
+        // Handle non-JSON response (like HTML error pages)
+        const textResponse = await signupResponse.text();
+        console.error('Non-JSON error response:', textResponse);
+        errorMessage = `Server error: ${signupResponse.status}`;
+      }
+      
       return NextResponse.json(
-        { error: errorData.detail || 'Signup failed' },
+        { error: errorMessage },
         { status: signupResponse.status }
       );
     }

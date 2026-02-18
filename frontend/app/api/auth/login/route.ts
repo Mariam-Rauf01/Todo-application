@@ -27,9 +27,22 @@ export async function POST(request: NextRequest) {
     });
 
     if (!loginResponse.ok) {
-      const errorData = await loginResponse.json();
+      // Try to parse as JSON, but handle non-JSON responses
+      const contentType = loginResponse.headers.get('content-type');
+      let errorMessage = 'Login failed';
+      
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await loginResponse.json();
+        errorMessage = errorData.detail || errorData.error || 'Invalid email or password';
+      } else {
+        // Handle non-JSON response (like HTML error pages)
+        const textResponse = await loginResponse.text();
+        console.error('Non-JSON error response:', textResponse);
+        errorMessage = `Server error: ${loginResponse.status}`;
+      }
+      
       return NextResponse.json(
-        { error: errorData.detail || 'Invalid email or password' },
+        { error: errorMessage },
         { status: loginResponse.status }
       );
     }
