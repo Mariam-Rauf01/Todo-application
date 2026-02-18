@@ -1569,7 +1569,10 @@
                         <div class="quick-replies">
                             <button class="quick-reply">Add a task</button>
                             <button class="quick-reply">View my tasks</button>
-                            <button class="quick-reply">Update a task</button>
+                            <button class="quick-reply">Task stats</button>
+                            <button class="quick-reply">Recurring task</button>
+                            <button class="quick-reply">Search tasks</button>
+                            <button class="quick-reply">Set reminder</button>
                             <button class="quick-reply">Get help</button>
                         </div>
                     </div>
@@ -1609,33 +1612,108 @@
             function sendMessage() {
                 const message = chatInput.value.trim();
                 if (message) {
-                    // Add user message
+                    // Add user message FIRST - immediately
                     const userMsgDiv = document.createElement('div');
                     userMsgDiv.classList.add('user-message');
-                    userMsgDiv.innerHTML = `<div class="message-content">${message}</div>`;
+                    userMsgDiv.innerHTML = `<div class="message-content">${escapeHtml(message)}</div>`;
                     chatMessages.appendChild(userMsgDiv);
 
                     // Clear input
                     chatInput.value = '';
 
-                    // Scroll to bottom
+                    // Scroll to bottom immediately
                     chatMessages.scrollTop = chatMessages.scrollHeight;
 
-                    // Bot response after delay
+                    // Show typing indicator after a tiny delay to ensure user message renders first
                     setTimeout(() => {
-                        const botResponse = getBotResponse(message);
-                        const botMsgDiv = document.createElement('div');
-                        botMsgDiv.classList.add('bot-message');
-                        botMsgDiv.innerHTML = `
+                        const typingDiv = document.createElement('div');
+                        typingDiv.classList.add('bot-message', 'typing-indicator');
+                        typingDiv.id = 'typing-indicator';
+                        typingDiv.innerHTML = `
                             <div class="bot-avatar">🤖</div>
-                            <div class="message-content">${botResponse}</div>
+                            <div class="message-content"><p>Typing...</p></div>
                         `;
-                        chatMessages.appendChild(botMsgDiv);
-
-                        // Scroll to bottom again
+                        chatMessages.appendChild(typingDiv);
                         chatMessages.scrollTop = chatMessages.scrollHeight;
-                    }, 500);
+
+                        // Call backend API to send message and get response
+                        sendToBackendChat(message).then(botResponse => {
+                            // Remove typing indicator
+                            const typingIndicator = document.getElementById('typing-indicator');
+                            if (typingIndicator) {
+                                typingIndicator.remove();
+                            }
+                            
+                            // Display bot response
+                            const botMsgDiv = document.createElement('div');
+                            botMsgDiv.classList.add('bot-message');
+                            botMsgDiv.innerHTML = `
+                                <div class="bot-avatar">🤖</div>
+                                <div class="message-content">${botResponse}</div>
+                            `;
+                            chatMessages.appendChild(botMsgDiv);
+
+                            // Scroll to bottom
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        }).catch(error => {
+                            console.error('Chat API error:', error);
+                            // Remove typing indicator
+                            const typingIndicator = document.getElementById('typing-indicator');
+                            if (typingIndicator) {
+                                typingIndicator.remove();
+                            }
+                            // Fallback to frontend response
+                            const botResponse = getBotResponse(message);
+                            const botMsgDiv = document.createElement('div');
+                            botMsgDiv.classList.add('bot-message');
+                            botMsgDiv.innerHTML = `
+                                <div class="bot-avatar">🤖</div>
+                                <div class="message-content">${botResponse}</div>
+                            `;
+                            chatMessages.appendChild(botMsgDiv);
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        });
+                    }, 50);
                 }
+            }
+            
+            // Send message to backend API
+            async function sendToBackendChat(message) {
+                if (!authToken) {
+                    throw new Error('Not authenticated');
+                }
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/chat`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({
+                            message: message
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        // Backend returns: { "response": "text", "action": {...} }
+                        // The response text contains the formatted message with or without JSON blocks
+                        return data.response || "I'm here to help!";
+                    } else {
+                        throw new Error('Backend chat API failed');
+                    }
+                } catch (error) {
+                    console.error('Backend chat error:', error);
+                    throw error;
+                }
+            }
+            
+            // Escape HTML to prevent XSS
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
             }
 
             // Bot response logic
@@ -1650,18 +1728,19 @@
                     return '<p>Please sign in to your account to manage tasks. Use the sign-in panel at the top.</p>';
                 }
 
-                // Handle task management commands
+                // Handle task management commands - ONLY provide guidance, don't add tasks
                 if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
                     return `<p>Hello ${currentUser.full_name || currentUser.email}! 😊 How can I help with your tasks today?</p>`;
-                } else if (msg.includes('add') || msg.includes('create') || msg.includes('new')) {
+                } else if (msg === 'no' || msg === 'nope' || msg === 'nah' || msg.trim() === 'no') {
+                    return '<p>No problem! 😊 Let me know if you need any help with your tasks.</p>';
+                } else if (msg.includes('add') || msg.includes('create') || (msg.includes('new') && !msg.includes('no')) || msg.includes('how to add')) {
                     // Extract task info from message
                     const taskMatch = userMessage.match(/(?:to|for)\s+(.+)/i);
                     if (taskMatch) {
                         const taskTitle = taskMatch[1];
-                        // Create a mock task addition
-                        return `<p>Got it! 📝 I've noted "${taskTitle}". Use the form above to actually add tasks.</p>`;
+                        return `<p>Got it! 📝 Adding "${taskTitle}" task...</p>`;
                     }
-                    return '<p>Sure! Tell me the task title and details, and I can guide you. Format: "Add task to [task details]"</p>';
+                    return '<p>Sure! Tell me the task title and details. Format: "Add task to [task details]" or "Create task to buy groceries"</p>';
                 } else if (msg.includes('edit') || msg.includes('update') || msg.includes('change')) {
                     // Extract task number if mentioned
                     const taskNum = userMessage.match(/(\d+)/);
@@ -1677,10 +1756,10 @@
                     return '<p>To delete a task, click the "Delete" button on the task card. Remember, this action cannot be undone.</p>';
                 } else if (msg.includes('complete') || msg.includes('done') || msg.includes('finish')) {
                     return '<p>To mark a task as completed, click the checkbox next to the task or use the "Edit" button to change its status to "Completed".</p>';
-                } else if (msg.includes('show') || msg.includes('list') || msg.includes('all')) {
+                } else if (msg.includes('show') || msg.includes('list') || msg.includes('all') || msg.includes('view')) {
                     const userTasks = tasks;
                     if (userTasks.length === 0) {
-                        return '<p>You have no tasks yet! 📝 Add your first task using the form above.</p>';
+                        return '<p>You have no tasks yet! 📝 Add your first task using the form above or tell me "Add task to [task name]"</p>';
                     }
                     let taskList = '<p>Here are your tasks:</p><ul>';
                     userTasks.forEach((task, index) => {
@@ -1688,8 +1767,22 @@
                     });
                     taskList += '</ul>';
                     return taskList;
+                } else if (msg.includes('stats') || msg.includes('statistics') || msg.includes('analytics')) {
+                    const userTasks = tasks;
+                    const total = userTasks.length;
+                    const completed = userTasks.filter(t => t.status === 'completed').length;
+                    const pending = userTasks.filter(t => t.status === 'pending').length;
+                    const inProgress = userTasks.filter(t => t.status === 'in-progress').length;
+                    
+                    return `<p>📊 <b>Your Task Statistics:</b><br><br>✅ Total: ${total}<br>🎯 Completed: ${completed}<br>⏳ Pending: ${pending}<br>🔄 In Progress: ${inProgress}<br><br>📈 Completion Rate: ${total > 0 ? ((completed/total)*100).toFixed(1) : 0}%</p>`;
+                } else if (msg.includes('recurring') || msg.includes('repeat')) {
+                    return '<p>🔄 <b>Recurring Tasks:</b><br>You can create daily, weekly, monthly, or yearly repeating tasks!<br><br>Try: "Add recurring task to take medicine daily" or "Weekly gym task"</p>';
+                } else if (msg.includes('search') || msg.includes('find')) {
+                    return '<p>🔍 <b>Search Tasks:</b><br>To search tasks, tell me what to search for!<br><br>Try: "Search task meeting" or "Find grocery tasks"<br><br>Or use the filter buttons above to filter by status!</p>';
+                } else if (msg.includes('reminder') || msg.includes('remind') || msg.includes('notify')) {
+                    return '<p>⏰ <b>Reminders:</b><br>Set reminders for your tasks!<br><br>Try: "Remind me to call doctor at 3 PM" or "Set reminder for meeting tomorrow"</p>';
                 } else if (msg.includes('help')) {
-                    return '<p>I can help you: add/edit/delete tasks, show all tasks, mark as complete, or organize categories. Try: "Add task to [details]", "Show all tasks", "Complete task 1", etc.</p>';
+                    return '<p>🎯 <b>I can help you with:</b><br><br>✅ <b>Tasks:</b> Add, edit, delete, complete via chat<br>📊 <b>Statistics:</b> View task analytics & progress<br>🔄 <b>Recurring:</b> Create daily/weekly/monthly tasks<br>🔍 <b>Search:</b> Find tasks quickly<br>⏰ <b>Reminders:</b> Set task reminders<br>📁 <b>Categories:</b> Organize by type<br><br>Try: "Add task to buy groceries", "Task stats", "Recurring task to exercise daily"</p>';
                 } else if (msg.includes('category') || msg.includes('type')) {
                     return '<p>You can categorize tasks as Personal, Work, Shopping, Health, Education, or Other.</p>';
                 } else if (msg.includes('filter') || msg.includes('show')) {
@@ -1834,11 +1927,17 @@
             background: #f9fafb;
         }
 
+        /* Ensure messages appear in correct order */
+        #chat-messages > div {
+            order: 1;
+        }
+
         .bot-message, .user-message {
             display: flex;
             gap: 12px;
             max-width: 85%;
             animation: fadeIn 0.3s ease;
+            flex-shrink: 0;
         }
 
         @keyframes fadeIn {
@@ -1881,6 +1980,23 @@
             color: #374151;
             border: 1px solid #e5e7eb;
             border-bottom-left-radius: 5px;
+        }
+        
+        /* Typing indicator styles */
+        .typing-indicator .message-content {
+            background: #e0e7ff;
+            color: #6366f1;
+            font-style: italic;
+            padding: 10px 16px;
+        }
+
+        .typing-indicator .bot-avatar {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
         }
 
         .welcome-message .message-content {

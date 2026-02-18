@@ -90,8 +90,14 @@ export default function TaskList() {
       console.log('Delete response:', responseText);
 
       if (response.ok) {
+        const deletedTaskTitle = tasks.find(t => t.id === id)?.title || 'Task';
         setTasks(tasks.filter(task => task.id !== id));
         console.log('Task deleted successfully from UI');
+        
+        // Dispatch event to update chatbot
+        window.dispatchEvent(new CustomEvent('task-action', {
+          detail: { action: 'deleted', taskTitle: deletedTaskTitle }
+        }));
       } else {
         setError('Failed to delete task');
         console.error('Delete failed with status:', response.status);
@@ -131,6 +137,14 @@ export default function TaskList() {
         const updatedTask = await response.json();
         setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
         console.log('Task status updated successfully');
+        
+        // Dispatch event to update chatbot
+        const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+        if (newStatus === 'completed') {
+          window.dispatchEvent(new CustomEvent('task-action', {
+            detail: { action: 'completed', taskTitle: task.title }
+          }));
+        }
       } else {
         console.error('Failed to update task status, status:', response.status);
         setError('Failed to update task');

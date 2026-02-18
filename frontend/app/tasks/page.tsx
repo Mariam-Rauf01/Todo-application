@@ -213,6 +213,12 @@ export default function TasksPage() {
       setNewTask({ title: '', description: '', due_date: '', priority: 'medium', category: '' });
       setShowAddForm(false);
       showSuccess('Task added successfully!', 'created');
+      
+      // Dispatch event to update chatbot
+      window.dispatchEvent(new CustomEvent('task-action', {
+        detail: { action: 'created', taskTitle: created.title }
+      }));
+      
       setError(''); // Clear any previous errors
     } catch (err) {
       // Only show error for real failures
@@ -248,8 +254,16 @@ export default function TasksPage() {
       setTasks(prev => prev.map(t => t.id === id ? updated : t));
       if (updates.status === 'completed') {
         showSuccess('Task completed! Great job! 🎉', 'completed');
+        // Dispatch event to update chatbot
+        window.dispatchEvent(new CustomEvent('task-action', {
+          detail: { action: 'completed', taskTitle: updated.title }
+        }));
       } else {
         showSuccess('Task updated successfully!', 'updated');
+        // Dispatch event to update chatbot
+        window.dispatchEvent(new CustomEvent('task-action', {
+          detail: { action: 'updated', taskTitle: updated.title }
+        }));
       }
     } catch (err) {
       setError('Failed to update task');
@@ -291,14 +305,26 @@ export default function TasksPage() {
         });
         
         // Even if API fails, remove from local UI for better UX
+        const deletedTaskTitle = tasks.find(t => t.id === deleteTarget.id)?.title || 'Task';
         setTasks(prev => prev.filter(t => t.id !== deleteTarget.id));
         showSuccess('Task deleted successfully!', 'deleted');
+        
+        // Dispatch event to update chatbot
+        window.dispatchEvent(new CustomEvent('task-action', {
+          detail: { action: 'deleted', taskTitle: deletedTaskTitle }
+        }));
         
       } catch (err) {
         console.error('Delete error:', err);
         // Remove locally anyway on network error
+        const deletedTaskTitle = tasks.find(t => t.id === deleteTarget.id)?.title || 'Task';
         setTasks(prev => prev.filter(t => t.id !== deleteTarget.id));
         showSuccess('Task deleted successfully!', 'deleted');
+        
+        // Dispatch event to update chatbot
+        window.dispatchEvent(new CustomEvent('task-action', {
+          detail: { action: 'deleted', taskTitle: deletedTaskTitle }
+        }));
       }
     } else if (deleteTarget.type === 'category' && deleteTarget.name) {
       saveCategories(categories.filter(c => c !== deleteTarget.name));

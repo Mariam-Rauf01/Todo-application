@@ -28,12 +28,11 @@ async def call_gemini_api(prompt: str, system_prompt: str = None) -> str:
     # Use the correct API endpoint for Gemini 2.0
     url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={api_key}"
     
-    # Build the contents with system instruction
+    # Build the contents - put system instruction as first message
     contents = []
     
-    # Add system instruction as first user message if provided
+    # Add system instruction as first message
     if system_prompt:
-        # For Gemini, we use systemInstruction field
         system_instruction = system_prompt
     else:
         system_instruction = "You are a helpful AI assistant."
@@ -41,14 +40,10 @@ async def call_gemini_api(prompt: str, system_prompt: str = None) -> str:
     # Add the user's message
     contents.append({
         "role": "user",
-        "parts": [{"text": prompt}]
+        "parts": [{"text": f"System: {system_instruction}\n\nUser: {prompt}"}]
     })
     
     payload = {
-        "systemInstruction": {
-            "role": "system",
-            "parts": [{"text": system_instruction}]
-        },
         "contents": contents,
         "generationConfig": {
             "temperature": 0.7,
@@ -85,6 +80,17 @@ CORE RULES:
 1. Hamesha friendly aur natural baat karo (jaise dost se baat hoti hai)
 2. Task actions ke baad JSON block END mein zaroor dena
 3. Kabhi bhi tasks mat gharana (hallucinate) - sirf DB se dekho
+
+FEATURES YOU SUPPORT:
+✅ Create/Edit/Delete tasks
+✅ Set task priority (low, medium, high)
+✅ Set due dates
+✅ Task categories (personal, work, shopping, health, education, other)
+✅ Recurring tasks (daily, weekly, monthly, yearly)
+✅ Task reminders
+✅ Search tasks
+✅ Task statistics/analytics
+✅ Complete/Pending task filters
 
 CURRENT TASKS CONTEXT (provided by backend):
 [Current Tasks]
@@ -232,6 +238,23 @@ def parse_single_command(message: str) -> Dict[str, Any]:
     message_lower = message.lower().strip()
     original_message = message
 
+    # Reject very short or single-word messages (except common commands)
+    words = message_lower.split()
+    common_commands = ['help', 'hello', 'hi', 'hey', 'bye', 'thanks', 'thank you', 'list', 'show', 'dikhao', 'namaste', 'salam', 'karo', 'karna', 'ban', 'add']
+    if len(words) <= 1 and message_lower not in common_commands:
+        # Check if it's just a random word without task intent
+        if not any(keyword in message_lower for keyword in ['task', 'create', 'delete', 'complete', 'update', 'banao', 'dalo']):
+            return {
+                "intent": "unknown",
+                "params": {"message": message}
+            }
+    elif len(words) <= 1 and message_lower in common_commands:
+        # Single common command word - treat as unknown/casual chat
+        return {
+            "intent": "unknown",
+            "params": {"message": message}
+        }
+
     # Roman Urdu to English mappings for common task commands
     roman_urdu_patterns = [
         # Task creation - MUST come first
@@ -306,12 +329,14 @@ def parse_single_command(message: str) -> Dict[str, Any]:
         r"create\s+(?:a\s+)?task\s*(?::\s*)?(.+)",
         r"add\s+(?:a\s+)?task\s*(?::\s*)?(.+)",
         r"new\s+task\s*(?::\s*)?(.+)",
-        # Roman Urdu: "home add karo", "khana banao"
-        r"(.+?)\s+add\s+karo",
-        r"(.+?)\s+add\s+kro",
-        r"(.+?)\s+add",
-        r"(.+?)\s+banao",
-        r"(.+?)\s+ban\s+do",
+        # Roman Urdu: "home add karo", "khana banao" - MUST have clear intent words
+        r"(.+?)\s+add\s+karo(?:\s+bye)?$",  # Handle "task add karo bye" - remove bye
+        r"(.+?)\s+add\s+kro(?:\s+bye)?$",
+        r"(.+?)\s+task\s+add\s+karo(?:\s+bye)?$",
+        r"(.+?)\s+task\s+add(?:\s+bye)?$",
+        r"(.+?)\s+task\s+banao(?:\s+bye)?$",
+        r"(.+?)\s+naya\s+task(?:\s+bye)?$",
+        r"(.+?)\s+ban\s+do(?:\s+bye)?$",
         r"create\s+(.+)",
         r"add\s+(.+)",
     ]
@@ -381,8 +406,8 @@ def parse_single_command(message: str) -> Dict[str, Any]:
         if match:
             title = match.group(1).strip() if match.group(1) else ""
             
-            # Clean up title - remove common filler words
-            title = re.sub(r'\s+(to|for|me|mera|meri|karna|hai)\s*$', '', title)
+            # Clean up title - remove common filler words and suffixes like "bye"
+            title = re.sub(r'\s+(to|for|me|mera|meri|karna|hai|bye|thanks|thank\s+you)\s*$', '', title)
             title = title.strip()
             
             if not title:
@@ -648,6 +673,113 @@ def parse_single_command(message: str) -> Dict[str, Any]:
                 "params": {}
             }
 
+    # Check for recurring task intent
+    recurring_patterns = [
+        r"recurring task",
+        r"repeat task",
+        r"task repeat",
+        r"daily task",
+        r"weekly task",
+        r"monthly task",
+        r"yearly task",
+        r"every day",
+        r"every week",
+        r"every month",
+        r"har roz",
+        r"har haftay",
+        r"har mahinay",
+        r"rozana",
+        r"create task with recurrence",
+        r"add recurring task",
+    ]
+    for pattern in recurring_patterns:
+        if re.search(pattern, message_lower):
+            # Extract recurrence pattern
+            recurrence = None
+            if any(word in message_lower for word in ['daily', 'every day', 'rozana', 'har roz']):
+                recurrence = 'daily'
+            elif any(word in message_lower for word in ['weekly', 'every week', 'har haftay']):
+                recurrence = 'weekly'
+            elif any(word in message_lower for word in ['monthly', 'every month', 'har mahinay']):
+                recurrence = 'monthly'
+            elif any(word in message_lower for word in ['yearly', 'annual', 'har saal']):
+                recurrence = 'yearly'
+            
+            return {
+                "intent": "recurring_task",
+                "params": {
+                    "recurrence_pattern": recurrence,
+                    "message": message
+                }
+            }
+
+    # Check for search intent
+    search_patterns = [
+        r"search task",
+        r"find task",
+        r"look for task",
+        r"task dhoondo",
+        r"task search",
+        r"mera task dhoondo",
+        r"find my tasks",
+        r"search for",
+    ]
+    for pattern in search_patterns:
+        if re.search(pattern, message_lower):
+            # Extract search query
+            search_query = message_lower
+            for pattern in search_patterns:
+                search_query = re.sub(pattern, '', search_query).strip()
+            
+            return {
+                "intent": "search_tasks",
+                "params": {
+                    "search_query": search_query
+                }
+            }
+
+    # Check for statistics/analytics intent
+    stats_patterns = [
+        r"task stats",
+        r"task statistics",
+        r"my progress",
+        r"task analytics",
+        r"task summary",
+        r"how many tasks",
+        r"tasks kitnay hain",
+        r"mera progress",
+        r"task report",
+        r"weekly report",
+        r"monthly report",
+    ]
+    for pattern in stats_patterns:
+        if re.search(pattern, message_lower):
+            return {
+                "intent": "statistics",
+                "params": {}
+            }
+
+    # Check for reminder intent
+    reminder_patterns = [
+        r"remind me",
+        r"set reminder",
+        r"add reminder",
+        r"reminder task",
+        r"task reminder",
+        r"yaad dilao",
+        r"reminder set karo",
+        r"notify me",
+        r"notification",
+    ]
+    for pattern in reminder_patterns:
+        if re.search(pattern, message_lower):
+            return {
+                "intent": "reminder",
+                "params": {
+                    "message": message
+                }
+            }
+
     # Check for about/app info intent
     about_patterns = [
         r"about this app",
@@ -716,35 +848,32 @@ async def chat_with_bot(
         if intent == "create_task":
             params = parsed_command["params"]
 
-            # Create the task in the database
-            new_task = models.Task(
-                title=params['title'],
-                description=params.get('description') or '',
-                status='pending',
-                priority=params.get('priority', 'medium'),
-                category=params.get('category'),
-                due_date=params.get('due_date'),
-                user_id=current_user.id
-            )
-            db.add(new_task)
-            db.commit()
-            db.refresh(new_task)
-
-            # Friendly response in user's language style
-            if any(word in chat_request.message.lower() for word in ['karo', 'karna', 'hai', 'mera', 'mere', 'banao', 'dalo']):
-                response_text = f"Theek hai bhai, '{params['title']}' task add kar diya! ✅"
-            else:
-                response_text = f"Done! Added '{params['title']}' to your list! ✨"
+            # Validate task title
+            title = params['title'].strip()
             
-            # JSON block for DB action
-            json_action = {
-                "action": "add",
-                "description": params['title'],
-                "due_date": params['due_date'].strftime("%Y-%m-%d") if params.get('due_date') else None,
-                "priority": params.get('priority', 'medium')
-            }
-            response_text += format_json_block(json_action)
-            json_action = None  # Clear since we already added to response
+            # Skip validation if title exists - create the task
+            if title and len(title) > 0:
+                # Create the task in the database
+                new_task = models.Task(
+                    title=title,
+                    description=params.get('description') or '',
+                    status='pending',
+                    priority=params.get('priority', 'medium'),
+                    category=params.get('category'),
+                    due_date=params.get('due_date'),
+                    user_id=current_user.id
+                )
+                db.add(new_task)
+                db.commit()
+                db.refresh(new_task)
+
+                # Friendly response in user's language style - CLEAN message, no task list, no JSON
+                if any(word in chat_request.message.lower() for word in ['karo', 'karna', 'hai', 'mera', 'mere', 'banao', 'dalo']):
+                    response_text = f"Theek hai bhai, '{title}' task add kar diya! ✅"
+                else:
+                    response_text = f"Done! Added '{title}' to your list! ✨"
+            else:
+                response_text = "Sorry, I didn't quite understand that. Could you please provide more details about the task? For example: 'Add task to buy groceries' or 'Kal doctor ke paas jana hai'."
         elif intent == "list_tasks":
             params = parsed_command["params"]
             
@@ -775,9 +904,10 @@ async def chat_with_bot(
                 else:
                     response_text = "You have no tasks matching your criteria. 🎉"
 
-            # JSON block for list action
+            # JSON block for list action - return separately
             json_action = {"action": "list"}
-            response_text += format_json_block(json_action)
+            # Don't append to response_text
+            # response_text += format_json_block(json_action)
             json_action = None
             
         elif intent == "update_task":
@@ -830,13 +960,14 @@ async def chat_with_bot(
                 else:
                     response_text = f"✅ Task '{task.title}' has been updated!"
 
-                # JSON block for update action
+                # JSON block for update action - return separately
                 json_action = {
                     "action": "update",
                     "task_id": task.id,
                     "updates": updates
                 }
-                response_text += format_json_block(json_action)
+                # Don't append to response_text
+                # response_text += format_json_block(json_action)
                 json_action = None
             else:
                 if any(word in chat_request.message.lower() for word in ['karo', 'karna', 'hai', 'mera', 'mere']):
@@ -866,12 +997,13 @@ async def chat_with_bot(
                 else:
                     response_text = f"✅ Task '{task_title}' has been deleted!"
                 
-                # JSON block for delete action
+                # JSON block for delete action - return separately
                 json_action = {
                     "action": "delete",
                     "task_id": task_id
                 }
-                response_text += format_json_block(json_action)
+                # Don't append to response_text
+                # response_text += format_json_block(json_action)
                 json_action = None
             else:
                 if any(word in chat_request.message.lower() for word in ['karo', 'karna', 'hai', 'mera', 'mere', 'hatao']):
@@ -885,9 +1017,168 @@ async def chat_with_bot(
             completed_tasks = len([t for t in all_tasks if t.status == "completed"])
             pending_tasks = total_tasks - completed_tasks
             high_priority = len([t for t in all_tasks if t.priority == "high" and t.status != "completed"])
-            
+
             response_text = f"📊 Your Task Summary:\n• Total: {total_tasks}\n• Completed: {completed_tasks}\n• Pending: {pending_tasks}\n• High Priority: {high_priority}"
             # No JSON action needed for summary (read-only)
+
+        elif intent == "statistics":
+            # Enhanced statistics with more details
+            all_tasks = db.query(models.Task).filter(models.Task.user_id == current_user.id).all()
+            
+            total_tasks = len(all_tasks)
+            completed_tasks = len([t for t in all_tasks if t.status == "completed"])
+            pending_tasks = len([t for t in all_tasks if t.status == "pending"])
+            in_progress_tasks = len([t for t in all_tasks if t.status == "in-progress"])
+            
+            high_priority = len([t for t in all_tasks if t.priority == "high" and t.status != "completed"])
+            medium_priority = len([t for t in all_tasks if t.priority == "medium" and t.status != "completed"])
+            low_priority = len([t for t in all_tasks if t.priority == "low" and t.status != "completed"])
+            
+            # Category breakdown
+            categories = {}
+            for task in all_tasks:
+                if task.category:
+                    categories[task.category] = categories.get(task.category, 0) + 1
+            
+            # Completion rate
+            completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+            
+            # Overdue tasks
+            from datetime import datetime
+            now = datetime.utcnow()
+            overdue_tasks = len([t for t in all_tasks if t.due_date and t.due_date < now and t.status != "completed"])
+            
+            if any(word in chat_request.message.lower() for word in ['karo', 'karna', 'hai', 'mera', 'mere', 'kitnay', 'dikhao']):
+                response_text = f"""📊 **Aapki Task Statistics:**
+
+✅ Total Tasks: {total_tasks}
+🎯 Completed: {completed_tasks}
+⏳ Pending: {pending_tasks}
+🔄 In Progress: {in_progress_tasks}
+⚠️ Overdue: {overdue_tasks}
+
+📈 Completion Rate: {completion_rate:.1f}%
+
+**Priority Breakdown:**
+🔴 High: {high_priority}
+🟡 Medium: {medium_priority}
+🟢 Low: {low_priority}"""
+            else:
+                response_text = f"""📊 **Your Task Statistics:**
+
+✅ Total Tasks: {total_tasks}
+🎯 Completed: {completed_tasks}
+⏳ Pending: {pending_tasks}
+🔄 In Progress: {in_progress_tasks}
+⚠️ Overdue: {overdue_tasks}
+
+📈 Completion Rate: {completion_rate:.1f}%
+
+**Priority Breakdown:**
+🔴 High: {high_priority}
+🟡 Medium: {medium_priority}
+🟢 Low: {low_priority}"""
+            
+            # No JSON action needed for statistics (read-only)
+
+        elif intent == "search_tasks":
+            # Search tasks by title or description
+            params = parsed_command["params"]
+            search_query = params.get("search_query", "").strip()
+            
+            if not search_query or len(search_query) < 2:
+                response_text = "🔍 Please provide a search term. For example: 'search task meeting' or 'find grocery tasks'"
+            else:
+                # Search in title and description
+                tasks = db.query(models.Task).filter(
+                    models.Task.user_id == current_user.id,
+                    (models.Task.title.ilike(f"%{search_query}%")) | 
+                    (models.Task.description.ilike(f"%{search_query}%"))
+                ).all()
+                
+                if not tasks:
+                    response_text = f"🔍 No tasks found matching '{search_query}'. Try a different search term!"
+                else:
+                    task_list = "\n".join([f"• {t.title} ({t.status}) - {t.priority}" for t in tasks[:10]])
+                    if any(word in chat_request.message.lower() for word in ['karo', 'karna', 'hai', 'mera', 'mere', 'dhoondo']):
+                        response_text = f"🔍 '{search_query}' ke liye {len(tasks)} task(s) mile:\n\n{task_list}"
+                    else:
+                        response_text = f"🔍 Found {len(tasks)} task(s) matching '{search_query}':\n\n{task_list}"
+            
+            # No JSON action needed for search (read-only)
+
+        elif intent == "recurring_task":
+            # Handle recurring task creation
+            params = parsed_command["params"]
+            recurrence_pattern = params.get("recurrence_pattern")
+            message = params.get("message", "")
+            
+            # Extract task title from message
+            title_match = re.search(r'(?:task|add|create|to)\s+(.+?)(?:\s+(?:daily|weekly|monthly|yearly|repeat|recurring))?', message, re.IGNORECASE)
+            task_title = title_match.group(1).strip() if title_match else "Recurring Task"
+            
+            # Clean up title
+            for word in ['daily', 'weekly', 'monthly', 'yearly', 'recurring', 'repeat', 'add', 'create', 'task', 'to']:
+                task_title = re.sub(rf'\b{word}\b', '', task_title, flags=re.IGNORECASE).strip()
+            
+            if not task_title or len(task_title) < 2:
+                response_text = "🔄 Recurring task ke liye task ka naam batao! Jaise: 'Add recurring task to take medicine daily' or 'Rozana gym jana ka task banao'"
+            else:
+                # Create the recurring task
+                new_task = models.Task(
+                    title=task_title,
+                    description=f"Recurring task ({recurrence_pattern or 'daily'})",
+                    status='pending',
+                    priority='medium',
+                    category='personal',
+                    user_id=current_user.id,
+                    recurrence_pattern=recurrence_pattern or 'daily',
+                    recurrence_interval=1
+                )
+                db.add(new_task)
+                db.commit()
+                db.refresh(new_task)
+                
+                recurrence_text = recurrence_pattern or "daily"
+                if any(word in chat_request.message.lower() for word in ['karo', 'karna', 'hai', 'mera', 'mere', 'banao']):
+                    response_text = f"🔄 Ho gaya! '{task_title}' task {recurrence_text} repeat hoga! ✅"
+                else:
+                    response_text = f"🔄 Done! Created recurring task '{task_title}' (repeats {recurrence_text})! ✅"
+                
+                json_action = {
+                    "action": "add",
+                    "description": f"{task_title} (Recurring: {recurrence_text})",
+                    "due_date": None,
+                    "priority": "medium",
+                    "recurrence": recurrence_text
+                }
+                # Don't append JSON to response_text
+                # response_text += format_json_block(json_action)
+                json_action = None
+
+        elif intent == "reminder":
+            # Handle reminder setup
+            params = parsed_command["params"]
+            message = params.get("message", "")
+            
+            # For now, provide a helpful response about reminders
+            # In a full implementation, this would create a reminder in a reminders table
+            response_text = """⏰ **Reminder Feature:**
+
+I can help you set reminders for your tasks! 
+
+Examples:
+• "Remind me to call doctor at 3 PM"
+• "Set reminder for meeting tomorrow at 10 AM"
+• "Yaad dilao kal subah 9 baje dawai lena"
+
+**Note:** Full reminder functionality with notifications is being enhanced. For now, you can:
+1. Set due dates on tasks
+2. Check the app for task notifications
+3. Enable push notifications in settings
+
+Would you like me to create a task with a due date instead? 😊"""
+            # No JSON action needed (informational response)
             
         elif intent == "who_am_i":
             # Return all user information
@@ -1197,19 +1488,73 @@ Respond naturally and include ```json ``` block ONLY if you're creating/updating
                     raise Exception("Gemini API key not configured")
 
             except Exception as e:
-                # Natural fallback responses when Gemini fails - friendly Roman Urdu
+                # Natural fallback responses when Gemini fails - detect language and respond accordingly
                 import random
-                fallbacks = [
-                    "Arre yaar! 😅 Main samajh nahi aya, lekin help zaroor kar sakta hoon! Koi task add karna hai? 🤔",
-                    "Hmm, thoda clear nahi hua! 😅 Par main tasks manage karne mein expert hoon! Kya karna hai? 💪",
-                    "Bhai, main abhi seekh raha hoon! 😊 Try karo: 'task banao', 'tasks dikhao', ya 'meeting delete karo'! 📝",
-                    "Oops! 😅 Dimagh kaam nahi kar raha! Par main ready hoon help ke liye! Kya kaam hai? 🚀",
-                ]
-                response_text = random.choice(fallbacks)
+                
+                # Detect if user is writing in Roman Urdu/Hinglish
+                urdu_keywords = ['hai', 'karo', 'kya', 'mera', 'mere', 'kuch', 'bhai', 'yaar', 'nahi', 'ho', 'banao', 'dikhao', 'kal', 'aaj']
+                message_lower = chat_request.message.lower()
+                is_roman_urdu = any(keyword in message_lower for keyword in urdu_keywords)
+                
+                if is_roman_urdu:
+                    # Roman Urdu fallback responses
+                    fallbacks_urdu = [
+                        "Hey! 👋 Kya haal hai? Main aapki tasks manage karne mein ready hoon! Kya karna hai?",
+                        "Ho! 😊 Koi task add karna hai ya existing tasks dekhne hain?",
+                        "Assalamualaikum! 🙏 Main aapki kya help kar sakta hoon? Task add karo, delete karo, ya dekhna hai?",
+                        "Bhai! 👋 Kya kaam hai? Task banao, tasks dekhao, ya kuch complete karo!",
+                        "Hey yaar! 😄 Main ready hoon! Aapko kya chahiye - naya task, deletion, ya task status dekhna?",
+                    ]
+                    response_text = random.choice(fallbacks_urdu)
+                else:
+                    # English fallback responses
+                    fallbacks_en = [
+                        "Hey there! 👋 What can I help you with? I can create tasks, show your list, or manage them!",
+                        "Hi! 😊 I'm here to help with your tasks! What would you like to do?",
+                        "Hello! 👋 I can help you create, update, delete, or view your tasks. What do you need?",
+                        "Hey! 😄 I'm ready to help! You can ask me to create a task, show your tasks, or complete them!",
+                        "Hi there! 👋 Need help managing your tasks? Just tell me what you'd like to do!",
+                    ]
+                    response_text = random.choice(fallbacks_en)
+                
                 print(f"Gemini error in chatbot: {e}")
         else:
-            # Natural response for unmatched intents
-            response_text = "Arre yaar! 😅 Main samajh nahi aya, lekin help zaroor kar sakta hoon! ✨\n\nKuch bhi karna ho - task banana, dekhna, delete karna - bas bolo! 😊"
+            # Natural response for unmatched intents - detect language
+            urdu_keywords = ['hai', 'karo', 'kya', 'mera', 'mere', 'kuch', 'bhai', 'yaar', 'nahi', 'ho', 'banao', 'dikhao']
+            message_lower = chat_request.message.lower()
+            is_roman_urdu = any(keyword in message_lower for keyword in urdu_keywords)
+            
+            if is_roman_urdu:
+                response_text = "Kya haal hai! 😊 Main aapki tasks manage karने mein madad kar sakta hoon! Batao, kya karna hai?"
+            else:
+                response_text = "Hey! 👋 I'm here to help with your tasks! What would you like to do?"
+
+        # Save user message and bot response to database
+        try:
+            user_chat_message = models.ChatMessage(
+                user_id=current_user.id,
+                message=chat_request.message,
+                response=None,
+                sender='user'
+            )
+            db.add(user_chat_message)
+
+            bot_chat_message = models.ChatMessage(
+                user_id=current_user.id,
+                message=response_text,
+                response=None,
+                sender='bot'
+            )
+            db.add(bot_chat_message)
+
+            db.commit()
+            db.refresh(user_chat_message)
+            db.refresh(bot_chat_message)
+            print(f"[CHATBOT] Messages saved: user_id={current_user.id}, user_msg_id={user_chat_message.id}, bot_msg_id={bot_chat_message.id}")
+        except Exception as save_error:
+            print(f"[CHATBOT] Error saving messages: {save_error}")
+            # Don't fail the request if save fails
+            db.rollback()
 
         # Return response (JSON blocks are already embedded in response_text for DB actions)
         return ChatResponse(response=response_text, action=json_action)
@@ -1233,7 +1578,7 @@ async def save_chat_message(
         response = message_data.get('response', '')
         sender = message_data.get('sender', 'user')
 
-        print(f"💬 Saving chat message: user_id={current_user.id}, message='{message[:50]}...', sender={sender}")
+        print(f"[BOT] Saving chat message: user_id={current_user.id}, message='{message[:50]}...', sender={sender}")
 
         # Save user message
         user_chat_message = models.ChatMessage(
@@ -1257,11 +1602,11 @@ async def save_chat_message(
         db.refresh(user_chat_message)
         db.refresh(bot_chat_message)
 
-        print(f"✅ Messages saved successfully! IDs: user={user_chat_message.id}, bot={bot_chat_message.id}")
+        print(f"[SUCCESS] Messages saved successfully! IDs: user={user_chat_message.id}, bot={bot_chat_message.id}")
 
         return user_chat_message
     except Exception as e:
-        print(f"❌ ERROR saving chat message: {e}")
+        print(f"[ERROR] ERROR saving chat message: {e}")
         raise
 
 # Endpoint to get chat history

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -67,6 +68,11 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
       }
 
       if (response.ok) {
+        const created = await response.json();
+        // Dispatch event to update chatbot
+        window.dispatchEvent(new CustomEvent('task-action', {
+          detail: { action: 'created', taskTitle: created.title || title }
+        }));
         router.push('/tasks');
         router.refresh();
       } else {
