@@ -20,12 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (password.length > 72) {
-      return NextResponse.json(
-        { error: 'Password cannot be longer than 72 characters' },
-        { status: 400 }
-      );
-    }
+    // Note: Backend automatically truncates passwords to 72 bytes for bcrypt compatibility
 
     // Call backend API for registration
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
