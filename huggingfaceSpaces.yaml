@@ -5,6 +5,6 @@ colorFrom: blue
 colorTo: green
 sdk: docker
 sdk_version: ""
-app_file: Dockerfile
+app_file: app.py
 pinned: false
 ---
