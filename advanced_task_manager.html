@@ -814,7 +814,7 @@
         // Task management system - Updated to use API calls
         let tasks = []; // Will be populated from API
         let currentFilter = 'all';
-        const API_BASE_URL = 'http://localhost:8000/api'; // Backend API URL
+        const API_BASE_URL = 'https://mariam-rauf01-taskmate-todo-app.hf.space/api'; // Backend API URL
 
         // DOM Elements
         const taskTitleInput = document.getElementById('taskTitle');
@@ -1394,6 +1394,14 @@
                     })
                 });
 
+                // Check if response is JSON before parsing
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Server returned non-JSON response:', text.substring(0, 500));
+                    throw new Error('Server error: ' + (response.status === 500 ? 'Internal Server Error' : 'Unexpected response'));
+                }
+
                 if (response.ok) {
                     // Auto-login after successful signup
                     const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -1411,20 +1419,20 @@
                         const data = await loginResponse.json();
                         authToken = data.access_token;
                         localStorage.setItem('authToken', authToken);
-                        
+
                         // Get user info after successful login
                         const userResponse = await fetch(`${API_BASE_URL}/auth/me`, {
                             headers: {
                                 'Authorization': `Bearer ${authToken}`
                             }
                         });
-                        
+
                         if (userResponse.ok) {
                             currentUser = await userResponse.json();
                             localStorage.setItem('currentUser', JSON.stringify(currentUser));
                             showApp();
                             welcomeUser.textContent = `Welcome, ${currentUser.full_name || currentUser.email}!`;
-                            
+
                             // Load tasks after successful signup/login
                             loadTasks();
                         } else {
@@ -1439,7 +1447,13 @@
                 }
             } catch (error) {
                 console.error('Signup error:', error);
-                alert('Signup failed. Please check your information and try again.');
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    alert('Cannot connect to server. Please ensure the backend is running on http://localhost:8000');
+                } else if (error.message.includes('Server error')) {
+                    alert('Server error occurred. Please check the server logs and try again.');
+                } else {
+                    alert('Signup failed. Please check your information and try again.');
+                }
             }
         }
 
