@@ -3,6 +3,8 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import os
+
+# Updated: 2026-02-19 - Fixed password truncation for bcrypt 72-byte limit
 from dotenv import load_dotenv
 
 load_dotenv()
