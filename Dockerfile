@@ -1,4 +1,5 @@
 # Multi-stage build for AI Task Manager
+# Rebuild: 2026-02-19 - Password fix deployment
 # Stage 1: Build frontend
 FROM node:18-alpine AS frontend-builder
 
