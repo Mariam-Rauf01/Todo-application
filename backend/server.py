@@ -118,7 +118,7 @@ def auth_signup():
             return jsonify({'detail': 'Username already exists'}), 400
         
         # Create new user
-        password_hash = generate_password_hash(password)
+        password_hash = generate_password_hash(password[:72])
         cur.execute(
             'INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id',
             (username, password_hash)
@@ -164,7 +164,7 @@ def register():
             return jsonify({'error': 'Username already exists'}), 400
         
         # Create new user
-        password_hash = generate_password_hash(password)
+        password_hash = generate_password_hash(password[:72])
         cur.execute(
             'INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id',
             (username, password_hash)
@@ -264,7 +264,7 @@ def auth_register():
             return jsonify({'detail': 'Username already exists'}), 400
         
         # Create new user
-        password_hash = generate_password_hash(password)
+        password_hash = generate_password_hash(password[:72])
         cur.execute(
             'INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id',
             (username, password_hash)
