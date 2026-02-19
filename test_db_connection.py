@@ -1,62 +1,54 @@
-from db_utils import test_connection, execute_query
 import psycopg2
+from urllib.parse import urlparse
+import sys
 
+# Use the database URL you provided
+DATABASE_URL = 'postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
 
-def setup_sample_table():
-    """
-    Create a sample table to test the database connection
-    """
+def test_connection():
     try:
-        # Create a sample table
-        create_table_query = """
-        CREATE TABLE IF NOT EXISTS sample_users (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            email VARCHAR(100) UNIQUE NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-        rows_affected = execute_query(create_table_query)
-        print(f"Table creation executed. Rows affected: {rows_affected}")
+        print("Attempting to connect to the database...")
+        print(f"Database URL: {DATABASE_URL}")
         
-        # Insert sample data
-        insert_query = """
-        INSERT INTO sample_users (name, email) 
-        VALUES (%s, %s) 
-        ON CONFLICT (email) DO NOTHING;
-        """
-        sample_data = [
-            ("John Doe", "john@example.com"),
-            ("Jane Smith", "jane@example.com"),
-            ("Bob Johnson", "bob@example.com")
-        ]
+        # Parse the database URL
+        parsed_url = urlparse(DATABASE_URL)
+        print(f"Hostname: {parsed_url.hostname}")
+        print(f"Port: {parsed_url.port}")
+        print(f"Database: {parsed_url.path[1:]}")  # Remove leading slash
+        print(f"Username: {parsed_url.username}")
         
-        for name, email in sample_data:
-            execute_query(insert_query, (name, email))
-            print(f"Inserted user: {name}")
+        # Connect to the database
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
         
-        # Query the data
-        select_query = "SELECT * FROM sample_users;"
-        results = execute_query(select_query, fetch=True)
+        # Test the connection with a simple query
+        cursor.execute("SELECT version();")
+        db_version = cursor.fetchone()
+        print(f"Connected successfully! Database version: {db_version[0]}")
         
-        print("\nSample Users:")
-        for row in results:
-            print(f"ID: {row[0]}, Name: {row[1]}, Email: {row[2]}, Created: {row[3]}")
-            
-    except psycopg2.Error as e:
-        print(f"Database error: {e}")
+        # Test if our expected tables exist
+        cursor.execute("""
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public';
+        """)
+        tables = cursor.fetchall()
+        print(f"Tables in database: {[table[0] for table in tables]}")
+        
+        cursor.close()
+        conn.close()
+        print("Connection closed.")
+        
+        return True
+        
     except Exception as e:
-        print(f"Error: {e}")
-
+        print(f"Error connecting to database: {str(e)}")
+        return False
 
 if __name__ == "__main__":
-    print("Testing database connection...")
-    
-    # Test the connection
-    if test_connection():
-        print("Connection successful!")
-        
-        # Setup and test with sample data
-        setup_sample_table()
+    success = test_connection()
+    if success:
+        print("\nDatabase connection test PASSED!")
     else:
-        print("Connection failed!")
+        print("\nDatabase connection test FAILED!")
+        sys.exit(1)
