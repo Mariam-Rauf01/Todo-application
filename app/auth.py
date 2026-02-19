@@ -71,15 +71,23 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
         return db_user
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Signup error: {e}")
-        # Check if it's a password-related error
+    except ValueError as e:
+        # Handle bcrypt password length error specifically
         error_str = str(e)
         if "72" in error_str and "bytes" in error_str.lower():
             raise HTTPException(
                 status_code=400,
                 detail="Password is too long. Maximum 72 characters allowed."
             )
+        # Re-raise other ValueError exceptions
+        logger.error(f"Signup ValueError: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Signup failed: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Signup error: {e}")
+        error_str = str(e)
         # Check if it's a database error
         if "relation" in error_str.lower() or "table" in error_str.lower():
             raise HTTPException(
