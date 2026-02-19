@@ -1,13 +1,55 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, EmailStr, Field, StringConstraints
+from typing import Annotated, Optional
 from datetime import datetime
 
-# User Schemas
+# =============================================================================
+# USER SCHEMAS - Pydantic v2 Best Practices
+# =============================================================================
+
+class UserCreate(BaseModel):
+    """
+    User registration schema with Pydantic v2 validation.
+    
+    Uses Annotated + Field + StringConstraints for strict validation.
+    """
+    full_name: Annotated[
+        str, 
+        StringConstraints(min_length=2, max_length=100, strip_whitespace=True)
+    ] = Field(
+        ..., 
+        description="User's full name (2-100 characters)"
+    )
+    
+    email: EmailStr = Field(
+        ..., 
+        description="User's email address (must be valid email format)"
+    )
+    
+    password: Annotated[
+        str, 
+        StringConstraints(min_length=8, max_length=72)
+    ] = Field(
+        ..., 
+        description="Password (minimum 8 characters, maximum 72 characters - bcrypt limit)"
+    )
+    
+    username: Optional[
+        Annotated[
+            str, 
+            StringConstraints(min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9_]+$")
+        ]
+    ] = Field(
+        default=None, 
+        description="Optional username (3-50 chars, alphanumeric + underscore only)"
+    )
+
+
+# Legacy User Schemas (kept for backward compatibility)
 class UserBase(BaseModel):
     email: str
     full_name: str
 
-class UserCreate(UserBase):
+class UserCreateLegacy(UserBase):
     password: str
 
 class User(UserBase):
