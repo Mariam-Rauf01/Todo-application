@@ -73,8 +73,15 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         logger.error(f"Signup error: {e}")
+        # Check if it's a password-related error
+        error_str = str(e)
+        if "72" in error_str and "bytes" in error_str.lower():
+            raise HTTPException(
+                status_code=400,
+                detail="Password is too long. Maximum 72 characters allowed."
+            )
         # Check if it's a database error
-        if "relation" in str(e).lower() or "table" in str(e).lower():
+        if "relation" in error_str.lower() or "table" in error_str.lower():
             raise HTTPException(
                 status_code=500,
                 detail="Database not initialized. Please contact administrator."
