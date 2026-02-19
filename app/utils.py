@@ -19,20 +19,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 def _prepare_password(password: str) -> str:
     """
     Prepare password for bcrypt by ensuring it's within 72-byte limit.
-    If password is too long, hash it with SHA256 first (produces 64 hex chars = 64 bytes).
-    This approach preserves more information than simple truncation.
+    Explicitly truncates to 72 bytes to prevent bcrypt from rejecting the password.
     """
     # Encode password to bytes
     password_bytes = password.encode('utf-8')
 
-    # If password is within limit, return as-is
-    if len(password_bytes) <= 72:
-        return password
+    # Explicitly truncate to 72 bytes (bcrypt's limit)
+    if len(password_bytes) > 72:
+        # Truncate to 72 bytes
+        return password[:72]
 
-    # If password is too long, hash it with SHA256 first
-    # SHA256 produces 64 hex characters (64 bytes), which is within bcrypt limit
-    hashed = hashlib.sha256(password_bytes).hexdigest()
-    return hashed
+    return password
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
