@@ -5,7 +5,7 @@
   "framework": "nextjs",
   "outputDirectory": ".next",
   "env": {
-    "NEXT_PUBLIC_BACKEND_URL": "https://your-backend-url.com",
+    "NEXT_PUBLIC_BACKEND_URL": "https://mariam-rauf01-taskmate-todo-app.hf.space",
     "DATABASE_URL": "postgresql://neondb_owner:npg_X1j5vWxfkBpH@ep-bitter-brook-ad70lb1c-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
   },
   "functions": {
