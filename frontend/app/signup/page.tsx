@@ -18,6 +18,13 @@ export default function Signup() {
     setIsLoading(true);
     setError('');
 
+    // Validate password length (bcrypt has 72 byte limit)
+    if (password.length > 72) {
+      setError('Password must be 72 characters or fewer (due to security limitations)');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -114,13 +121,16 @@ export default function Signup() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password <span className="text-xs text-gray-400">(max 72 characters)</span>
+                </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">🔒</span>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    maxLength={72}
                     className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                     placeholder="••••••••"
                     required

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Signup</title>
+</head>
+<body>
+    <h1>Testing HuggingFace Signup API</h1>
+    <button onclick="testSignup()">Test Signup</button>
+    <pre id="result"></pre>
+    
+    <script>
+        async function testSignup() {
+            const result = document.getElementById('result');
+            result.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch('https://mariam-rauf01-taskmate-todo-app.hf.space/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        password: 'test123',
+                        full_name: 'Test User'
+                    })
+                });
+                
+                const data = await response.json();
+                result.textContent = `Status: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                result.textContent = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
