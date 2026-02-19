@@ -19,26 +19,35 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 def _prepare_password(password: str) -> str:
     """
     Prepare password for bcrypt by ensuring it's within 72-byte limit.
-    Explicitly truncates to 72 bytes to prevent bcrypt from rejecting the password.
+    If password is too long, hash it with SHA256 first (produces 64 hex chars = 64 bytes).
     """
     # Encode password to bytes
     password_bytes = password.encode('utf-8')
 
-    # Explicitly truncate to 72 bytes (bcrypt's limit)
-    if len(password_bytes) > 72:
-        # Truncate to 72 bytes
-        return password[:72]
+    # If password is within limit, return as-is
+    if len(password_bytes) <= 72:
+        return password
 
-    return password
+    # If password is too long, hash it with SHA256 first
+    # SHA256 produces 64 hex characters (64 bytes), which is within bcrypt limit
+    hashed = hashlib.sha256(password_bytes).hexdigest()
+    return hashed
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify a plain password against a hashed password
-    Uses the same preparation logic as hashing to ensure matching
     """
     try:
         prepared_password = _prepare_password(plain_password)
         return pwd_context.verify(prepared_password, hashed_password)
+    except ValueError as e:
+        # Handle "password cannot be longer than 72 bytes" error
+        if "72" in str(e):
+            # Truncate password to 72 bytes and try again
+            password_bytes = plain_password.encode('utf-8')[:72]
+            truncated_password = password_bytes.decode('utf-8', errors='ignore')
+            return pwd_context.verify(truncated_password, hashed_password)
+        return False
     except Exception as e:
         print(f"Password verification error: {e}")
         return False
@@ -46,13 +55,21 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_password_hash(password: str) -> str:
     """
     Hash a password using bcrypt
-    Automatically handles passwords of any length using SHA256 for long passwords
+    Automatically handles passwords of any length
     """
     try:
         # Prepare password (truncate or hash if too long)
         prepared_password = _prepare_password(password)
         # Now hash with bcrypt
         return pwd_context.hash(prepared_password)
+    except ValueError as e:
+        # Handle "password cannot be longer than 72 bytes" error
+        if "72" in str(e):
+            # Truncate password to 72 bytes and try again
+            password_bytes = password.encode('utf-8')[:72]
+            truncated_password = password_bytes.decode('utf-8', errors='ignore')
+            return pwd_context.hash(truncated_password)
+        raise
     except Exception as e:
         print(f"Password hashing error: {e}")
         raise
