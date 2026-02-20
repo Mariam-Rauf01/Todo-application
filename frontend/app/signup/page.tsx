@@ -19,6 +19,12 @@ export default function Signup() {
     setError('');
 
     // Validate password length (bcrypt has 72 byte limit)
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      setIsLoading(false);
+      return;
+    }
+
     if (password.length > 72) {
       setError('Password must be 72 characters or fewer (due to security limitations)');
       setIsLoading(false);
@@ -122,7 +128,7 @@ export default function Signup() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password <span className="text-xs text-gray-400">(max 72 characters)</span>
+                  Password <span className="text-xs text-gray-400">(8-72 characters)</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">🔒</span>
@@ -130,6 +136,7 @@ export default function Signup() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    minLength={8}
                     maxLength={72}
                     className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                     placeholder="••••••••"
