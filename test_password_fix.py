@@ -8,7 +8,8 @@ import os
 if sys.platform == 'win32':
     os.system('chcp 65001 > nul')
 
-sys.path.append('backend')
+# Test with ROOT app folder (the one HuggingFace uses)
+sys.path.insert(0, '.')
 
 from app.utils import _prepare_password, get_password_hash, verify_password
 

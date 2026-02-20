@@ -36,25 +36,18 @@ def _prepare_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify a plain password against a hashed password
-    Automatically handles truncation to 72 bytes
+    Uses _prepare_password to handle bcrypt's 72-byte limit
     """
-    # Truncate password to 72 bytes (bcrypt limit)
-    password_bytes = plain_password.encode('utf-8')[:72]
-    truncated_password = password_bytes.decode('utf-8', errors='ignore')
-    
-    return pwd_context.verify(truncated_password, hashed_password)
+    prepared_password = _prepare_password(plain_password)
+    return pwd_context.verify(prepared_password, hashed_password)
 
 def get_password_hash(password: str) -> str:
     """
     Hash a password using bcrypt
-    Automatically handles passwords of any length by truncating to 72 bytes
+    Uses _prepare_password to handle bcrypt's 72-byte limit
     """
-    # First, truncate password to 72 bytes (bcrypt limit)
-    password_bytes = password.encode('utf-8')[:72]
-    truncated_password = password_bytes.decode('utf-8', errors='ignore')
-    
-    # Hash with bcrypt
-    return pwd_context.hash(truncated_password)
+    prepared_password = _prepare_password(password)
+    return pwd_context.hash(prepared_password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """
