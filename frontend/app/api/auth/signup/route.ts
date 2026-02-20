@@ -20,13 +20,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (password.length > 72) {
-      return NextResponse.json(
-        { error: 'Password is too long. Maximum 72 characters allowed.' },
-        { status: 400 }
-      );
-    }
-
     // Note: Backend automatically truncates passwords to 72 bytes for bcrypt compatibility
 
     // Call backend API for registration

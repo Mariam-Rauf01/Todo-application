@@ -25,12 +25,6 @@ export default function Signup() {
       return;
     }
 
-    if (password.length > 72) {
-      setError('Password must be 72 characters or fewer (due to security limitations)');
-      setIsLoading(false);
-      return;
-    }
-
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -136,7 +130,6 @@ export default function Signup() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    minLength={8}
                     maxLength={72}
                     className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                     placeholder="••••••••"
