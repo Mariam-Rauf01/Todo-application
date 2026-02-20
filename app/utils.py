@@ -36,43 +36,25 @@ def _prepare_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify a plain password against a hashed password
+    Automatically handles truncation to 72 bytes
     """
-    try:
-        prepared_password = _prepare_password(plain_password)
-        return pwd_context.verify(prepared_password, hashed_password)
-    except ValueError as e:
-        # Handle "password cannot be longer than 72 bytes" error
-        if "72" in str(e):
-            # Truncate password to 72 bytes and try again
-            password_bytes = plain_password.encode('utf-8')[:72]
-            truncated_password = password_bytes.decode('utf-8', errors='ignore')
-            return pwd_context.verify(truncated_password, hashed_password)
-        return False
-    except Exception as e:
-        print(f"Password verification error: {e}")
-        return False
+    # Truncate password to 72 bytes (bcrypt limit)
+    password_bytes = plain_password.encode('utf-8')[:72]
+    truncated_password = password_bytes.decode('utf-8', errors='ignore')
+    
+    return pwd_context.verify(truncated_password, hashed_password)
 
 def get_password_hash(password: str) -> str:
     """
     Hash a password using bcrypt
-    Automatically handles passwords of any length
+    Automatically handles passwords of any length by truncating to 72 bytes
     """
-    try:
-        # Prepare password (truncate or hash if too long)
-        prepared_password = _prepare_password(password)
-        # Now hash with bcrypt
-        return pwd_context.hash(prepared_password)
-    except ValueError as e:
-        # Handle "password cannot be longer than 72 bytes" error
-        if "72" in str(e):
-            # Truncate password to 72 bytes and try again
-            password_bytes = password.encode('utf-8')[:72]
-            truncated_password = password_bytes.decode('utf-8', errors='ignore')
-            return pwd_context.hash(truncated_password)
-        raise
-    except Exception as e:
-        print(f"Password hashing error: {e}")
-        raise
+    # First, truncate password to 72 bytes (bcrypt limit)
+    password_bytes = password.encode('utf-8')[:72]
+    truncated_password = password_bytes.decode('utf-8', errors='ignore')
+    
+    # Hash with bcrypt
+    return pwd_context.hash(truncated_password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """
