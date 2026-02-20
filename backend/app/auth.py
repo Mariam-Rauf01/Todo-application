@@ -37,8 +37,15 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
                 detail="Email already registered"
             )
 
-        # Hash the password
-        hashed_password = utils.get_password_hash(user.password)
+        # Hash the password with error handling
+        try:
+            hashed_password = utils.get_password_hash(user.password)
+        except Exception as hash_error:
+            logger.error(f"Password hashing error: {hash_error}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Password hashing failed: {str(hash_error)}"
+            )
 
         # Create new user
         db_user = models.User(

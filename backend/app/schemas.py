@@ -26,11 +26,11 @@ class UserCreate(BaseModel):
     )
     
     password: Annotated[
-        str, 
-        StringConstraints(min_length=8, max_length=72)
+        str,
+        StringConstraints(min_length=8)
     ] = Field(
-        ..., 
-        description="Password (minimum 8 characters, maximum 72 characters - bcrypt limit)"
+        ...,
+        description="Password (minimum 8 characters, longer passwords are automatically hashed with SHA256 for bcrypt compatibility)"
     )
     
     username: Optional[

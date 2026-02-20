@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Note: Backend automatically truncates passwords to 72 bytes for bcrypt compatibility
+    // Note: Backend automatically handles passwords of any length using SHA256 for bcrypt compatibility
 
     // Call backend API for registration
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';

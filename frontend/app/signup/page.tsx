@@ -122,7 +122,7 @@ export default function Signup() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password <span className="text-xs text-gray-400">(8-72 characters)</span>
+                  Password <span className="text-xs text-gray-400">(minimum 8 characters)</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">🔒</span>
@@ -130,7 +130,6 @@ export default function Signup() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    maxLength={72}
                     className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
                     placeholder="••••••••"
                     required
