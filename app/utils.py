@@ -23,11 +23,12 @@ def _prepare_password(password: str) -> str:
     """
     # Encode password to bytes
     password_bytes = password.encode('utf-8')
-
-    # If password is within limit, return as-is
+    
+    # If password is within limit, return encoded bytes decoded to ensure consistent handling
     if len(password_bytes) <= 72:
-        return password
-
+        # Return the password bytes decoded to ensure consistent UTF-8 handling
+        return password_bytes.decode('utf-8')
+    
     # If password is too long, hash it with SHA256 first
     # SHA256 produces 64 hex characters (64 bytes), which is within bcrypt limit
     hashed = hashlib.sha256(password_bytes).hexdigest()

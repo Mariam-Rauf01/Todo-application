@@ -39,7 +39,17 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
         # Hash the password with error handling
         try:
+            # Additional safety check - ensure password is within bcrypt limit
+            password_bytes = user.password.encode('utf-8')
+            if len(password_bytes) > 72:
+                # This shouldn't happen with _prepare_password, but just in case
+                raise HTTPException(
+                    status_code=400,
+                    detail='Password is too long. Maximum is 72 bytes when encoded as UTF-8.'
+                )
             hashed_password = utils.get_password_hash(user.password)
+        except HTTPException:
+            raise
         except Exception as hash_error:
             logger.error(f"Password hashing error: {hash_error}")
             raise HTTPException(
