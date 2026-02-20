@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test HuggingFace Backend</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #28a745; }
+        .error { background: #f8d7da; border-color: #dc3545; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test HuggingFace Backend</h1>
+    
+    <div class="test">
+        <h3>Test 1: Health Check</h3>
+        <button onclick="testHealth()">Run Test</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test">
+        <h3>Test 2: Signup with Short Password (lioness)</h3>
+        <button onclick="testShortPassword()">Run Test</button>
+        <div id="short-pw-result"></div>
+    </div>
+
+    <div class="test">
+        <h3>Test 3: Signup with 8-char Password (riyaaaaa)</h3>
+        <button onclick="testEightCharPassword()">Run Test</button>
+        <div id="eight-pw-result"></div>
+    </div>
+
+    <div class="test">
+        <h3>Test 4: Signup with Long Password (>72 chars)</h3>
+        <button onclick="testLongPassword()">Run Test</button>
+        <div id="long-pw-result"></div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'https://mariam-rauf01-taskmate-todo-app.hf.space';
+
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = 'Testing...';
+            try {
+                const response = await fetch(`${BACKEND_URL}/health`);
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                resultDiv.className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                resultDiv.innerHTML = `<pre>Error: ${error.message}</pre>`;
+                resultDiv.className = 'error';
+            }
+        }
+
+        async function testSignup(password) {
+            const email = `test_${Date.now()}@example.com`;
+            const response = await fetch(`${BACKEND_URL}/api/auth/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: email,
+                    password: password,
+                    full_name: 'Test User'
+                })
+            });
+            const data = await response.json();
+            return { response, data, email };
+        }
+
+        async function testShortPassword() {
+            const resultDiv = document.getElementById('short-pw-result');
+            resultDiv.innerHTML = 'Testing with password "lioness" (7 chars)...';
+            try {
+                const { response, data, email } = await testSignup('lioness');
+                resultDiv.innerHTML = `
+                    <p><strong>Email:</strong> ${email}</p>
+                    <p><strong>Status:</strong> ${response.status} ${response.ok ? '✅ SUCCESS' : '❌ FAILED'}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                resultDiv.className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                resultDiv.innerHTML = `<pre>Error: ${error.message}</pre>`;
+                resultDiv.className = 'error';
+            }
+        }
+
+        async function testEightCharPassword() {
+            const resultDiv = document.getElementById('eight-pw-result');
+            resultDiv.innerHTML = 'Testing with password "riyaaaaa" (8 chars)...';
+            try {
+                const { response, data, email } = await testSignup('riyaaaaa');
+                resultDiv.innerHTML = `
+                    <p><strong>Email:</strong> ${email}</p>
+                    <p><strong>Status:</strong> ${response.status} ${response.ok ? '✅ SUCCESS' : '❌ FAILED'}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                resultDiv.className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                resultDiv.innerHTML = `<pre>Error: ${error.message}</pre>`;
+                resultDiv.className = 'error';
+            }
+        }
+
+        async function testLongPassword() {
+            const resultDiv = document.getElementById('long-pw-result');
+            const longPassword = 'ThisIsAVeryLongPasswordThatExceedsThe72ByteLimitByASignificantMarginAndShouldStillWork123!';
+            resultDiv.innerHTML = `Testing with password "${longPassword}" (${longPassword.length} chars)...`;
+            try {
+                const { response, data, email } = await testSignup(longPassword);
+                resultDiv.innerHTML = `
+                    <p><strong>Email:</strong> ${email}</p>
+                    <p><strong>Status:</strong> ${response.status} ${response.ok ? '✅ SUCCESS' : '❌ FAILED'}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                resultDiv.className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                resultDiv.innerHTML = `<pre>Error: ${error.message}</pre>`;
+                resultDiv.className = 'error';
+            }
+        }
+    </script>
+</body>
+</html>
