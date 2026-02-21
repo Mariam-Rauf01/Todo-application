@@ -1602,6 +1602,23 @@
     </div>
 
     <script>
+        // Debug: Check if chatbot HTML exists
+        (function() {
+            console.log('=== Chatbot Debug Check ===');
+            const chatbotHTML = document.getElementById('simple-chatbot');
+            const chatTrigger = document.getElementById('chatbot-trigger');
+            console.log('Chatbot HTML element:', chatbotHTML);
+            console.log('Chat Trigger element:', chatTrigger);
+            if (chatbotHTML) {
+                console.log('Chatbot HTML found in DOM!');
+                console.log('Chatbot display style:', window.getComputedStyle(chatbotHTML).display);
+                console.log('Chatbot visibility:', window.getComputedStyle(chatbotHTML).visibility);
+                console.log('Chatbot opacity:', window.getComputedStyle(chatbotHTML).opacity);
+            } else {
+                console.error('Chatbot HTML NOT found in DOM!');
+            }
+        })();
+        
         // Initialize chatbot - call directly since script is at end of HTML
         function initializeChatbot() {
             const chatTrigger = document.getElementById('chatbot-trigger');
