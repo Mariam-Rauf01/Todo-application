@@ -1,101 +1,67 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { message, response, sender } = body;
-
-    if (!message) {
-      return NextResponse.json(
-        { detail: 'Message is required' },
-        { status: 400 }
-      );
-    }
-
-    // Get the access token from cookies or localStorage
-    const cookieHeader = request.headers.get('cookie') || '';
-    const accessTokenMatch = cookieHeader.match(/access_token=([^;]+)/);
-    const accessToken = accessTokenMatch ? accessTokenMatch[1] : null;
-
-    if (!accessToken) {
-      return NextResponse.json(
-        { detail: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Call the backend API
+    const token = request.headers.get('authorization');
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-    const apiResponse = await fetch(`${backendUrl}/api/chatbot/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ message, response, sender }),
+    
+    const res = await fetch(`${backendUrl}/api/chatbot/messages?limit=50`, {
+      headers: { 'Authorization': token || '' }
     });
-
-    if (apiResponse.ok) {
-      const data = await apiResponse.json();
+    
+    if (res.ok) {
+      const data = await res.json();
       return NextResponse.json(data);
-    } else if (apiResponse.status === 401) {
-      return NextResponse.json(
-        { detail: 'Authentication required' },
-        { status: 401 }
-      );
-    } else {
-      const errorData = await apiResponse.json();
-      return NextResponse.json(
-        { detail: errorData.detail || 'Failed to save message' },
-        { status: apiResponse.status }
-      );
     }
+    
+    return NextResponse.json({ error: 'Failed to load messages' }, { status: res.status });
   } catch (error) {
-    console.error('Save message API error:', error);
-    return NextResponse.json(
-      { detail: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function GET(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    // Get the access token from cookies
-    const cookieHeader = request.headers.get('cookie') || '';
-    const accessTokenMatch = cookieHeader.match(/access_token=([^;]+)/);
-    const accessToken = accessTokenMatch ? accessTokenMatch[1] : null;
-
-    if (!accessToken) {
-      return NextResponse.json(
-        { detail: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Call the backend API
+    const body = await request.json();
+    const token = request.headers.get('authorization');
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-    const apiResponse = await fetch(`${backendUrl}/api/chatbot/messages?limit=50`, {
-      method: 'GET',
+    
+    const res = await fetch(`${backendUrl}/api/chatbot/messages`, {
+      method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'Authorization': token || ''
       },
+      body: JSON.stringify(body)
     });
-
-    if (apiResponse.ok) {
-      const data = await apiResponse.json();
+    
+    if (res.ok) {
+      const data = await res.json();
       return NextResponse.json(data);
-    } else {
-      return NextResponse.json(
-        { detail: 'Failed to get messages' },
-        { status: apiResponse.status }
-      );
     }
+    
+    return NextResponse.json({ error: 'Failed to save message' }, { status: res.status });
   } catch (error) {
-    console.error('Get messages API error:', error);
-    return NextResponse.json(
-      { detail: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE() {
+  try {
+    const token = new URL(request.url).headers.get('authorization');
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+    
+    const res = await fetch(`${backendUrl}/api/chatbot/messages`, {
+      method: 'DELETE',
+      headers: { 'Authorization': token || '' }
+    });
+    
+    if (res.ok) {
+      return NextResponse.json({ message: 'Chat cleared' });
+    }
+    
+    return NextResponse.json({ error: 'Failed to clear chat' }, { status: res.status });
+  } catch (error) {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
