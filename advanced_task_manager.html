@@ -1585,6 +1585,9 @@
             <div id="chat-messages">
                 <!-- Messages will be added here dynamically -->
             </div>
+            <button id="scroll-to-bottom-btn" title="Scroll to bottom">
+                <i class="fas fa-arrow-down"></i>
+            </button>
             <div id="chat-input-area">
                 <button id="attach-btn" title="Quick Commands"><i class="fas fa-paperclip"></i></button>
                 <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off">
@@ -1606,8 +1609,31 @@
             const sendMessageBtn = document.getElementById('send-message');
             const attachBtn = document.getElementById('attach-btn');
             const emojiBtn = document.getElementById('emoji-btn');
-            
+            const scrollToBottomBtn = document.getElementById('scroll-to-bottom-btn');
+
             let isTyping = false;
+            let showScrollButton = false;
+
+            // Check if scroll is needed
+            function checkScroll() {
+                const scrollThreshold = 50;
+                const positionFromBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight;
+                showScrollButton = positionFromBottom > scrollThreshold;
+                
+                if (showScrollButton) {
+                    scrollToBottomBtn.style.display = 'flex';
+                } else {
+                    scrollToBottomBtn.style.display = 'none';
+                }
+            }
+
+            // Scroll to bottom button click
+            scrollToBottomBtn.addEventListener('click', function() {
+                scrollToBottom();
+            });
+
+            // Listen for scroll events
+            chatMessages.addEventListener('scroll', checkScroll);
 
             // Toggle chat window
             chatTrigger.addEventListener('click', function() {
@@ -1616,6 +1642,7 @@
                 // Scroll to bottom when opening
                 setTimeout(() => {
                     chatMessages.scrollTop = chatMessages.scrollHeight;
+                    checkScroll();
                 }, 100);
             });
 
@@ -2217,6 +2244,7 @@
             gap: 8px;
             background: #e5ddd5;
             background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4c5b0' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            position: relative;
         }
 
         #chat-messages::-webkit-scrollbar {
@@ -2234,6 +2262,49 @@
 
         #chat-messages::-webkit-scrollbar-thumb:hover {
             background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Scroll to Bottom Button */
+        #scroll-to-bottom-btn {
+            position: absolute;
+            bottom: 70px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #075E54, #128C7E);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: bounce-in 0.3s ease;
+        }
+
+        #scroll-to-bottom-btn:hover {
+            background: linear-gradient(135deg, #128C7E, #25D366);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        #scroll-to-bottom-btn:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes bounce-in {
+            0% {
+                opacity: 0;
+                transform: scale(0.5) translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
 
         /* Message Wrapper */
