@@ -816,21 +816,25 @@
         let currentFilter = 'all';
         const API_BASE_URL = 'https://mariam-rauf01-taskmate-todo-app.hf.space/api'; // Backend API URL
 
-        // DOM Elements
-        const taskTitleInput = document.getElementById('taskTitle');
-        const taskDescInput = document.getElementById('taskDesc');
-        const taskStatusSelect = document.getElementById('taskStatus');
-        const taskCategorySelect = document.getElementById('taskCategory');
-        const addTaskBtn = document.getElementById('addTaskBtn');
-        const taskList = document.getElementById('taskList');
-        const filterButtons = document.querySelectorAll('.filter-btn');
+        // DOM Elements - will be initialized in initApp()
+        let taskTitleInput, taskDescInput, taskStatusSelect, taskCategorySelect;
+        let addTaskBtn, taskList, filterButtons;
 
         // Initialize the app
         async function initApp() {
+            // Initialize DOM elements
+            taskTitleInput = document.getElementById('taskTitle');
+            taskDescInput = document.getElementById('taskDesc');
+            taskStatusSelect = document.getElementById('taskStatus');
+            taskCategorySelect = document.getElementById('taskCategory');
+            addTaskBtn = document.getElementById('addTaskBtn');
+            taskList = document.getElementById('taskList');
+            filterButtons = document.querySelectorAll('.filter-btn');
+            
             setupTaskEventListeners(); // Set up event delegation for task actions
             setupEventListeners();
             resetForm(); // Ensure form is in initial state
-            
+
             // Load tasks if user is authenticated
             if (currentUser) {
                 await loadTasks();
@@ -2080,11 +2084,13 @@
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
             z-index: 9999 !important;
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             user-select: none;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
 
         #chatbot-trigger:hover {
