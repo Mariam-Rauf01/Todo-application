@@ -872,6 +872,12 @@ async def chat_with_bot(
                     response_text = f"Theek hai bhai, '{title}' task add kar diya! ✅"
                 else:
                     response_text = f"Done! Added '{title}' to your list! ✨"
+
+                # Return action for frontend to refresh tasks
+                json_action = {
+                    "action": "add",
+                    "task_id": new_task.id
+                }
             else:
                 response_text = "Sorry, I didn't quite understand that. Could you please provide more details about the task? For example: 'Add task to buy groceries' or 'Kal doctor ke paas jana hai'."
         elif intent == "list_tasks":
@@ -966,9 +972,7 @@ async def chat_with_bot(
                     "task_id": task.id,
                     "updates": updates
                 }
-                # Don't append to response_text
-                # response_text += format_json_block(json_action)
-                json_action = None
+                # Keep json_action so it can be returned in the response
             else:
                 if any(word in chat_request.message.lower() for word in ['karo', 'karna', 'hai', 'mera', 'mere']):
                     response_text = f"❌ '{task_identifier}' jaisa koi task nahi mila."
@@ -996,15 +1000,13 @@ async def chat_with_bot(
                     response_text = f"✅ Task '{task_title}' delete ho gaya!"
                 else:
                     response_text = f"✅ Task '{task_title}' has been deleted!"
-                
+
                 # JSON block for delete action - return separately
                 json_action = {
                     "action": "delete",
                     "task_id": task_id
                 }
-                # Don't append to response_text
-                # response_text += format_json_block(json_action)
-                json_action = None
+                # Keep json_action so it can be returned in the response
             else:
                 if any(word in chat_request.message.lower() for word in ['karo', 'karna', 'hai', 'mera', 'mere', 'hatao']):
                     response_text = f"❌ '{task_identifier}' jaisa koi task nahi mila."
@@ -1617,11 +1619,11 @@ async def get_chat_history(
     db = Depends(database.get_db)
 ):
     """
-    Get chat history for the current user
+    Get chat history for the current user (in ascending order - oldest first)
     """
     messages = db.query(models.ChatMessage).filter(
         models.ChatMessage.user_id == current_user.id
-    ).order_by(models.ChatMessage.created_at.desc()).limit(limit).all()
+    ).order_by(models.ChatMessage.created_at.asc()).limit(limit).all()  # Changed to asc for chronological order
     return messages
 
 # Endpoint to clear chat history
