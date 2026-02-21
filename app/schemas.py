@@ -1,6 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field, StringConstraints
+from pydantic import BaseModel, EmailStr, Field, StringConstraints, field_validator
 from typing import Annotated, Optional
 from datetime import datetime
+from dateutil import parser as dateutil_parser
 
 # =============================================================================
 # USER SCHEMAS - Pydantic v2 Best Practices
@@ -73,6 +74,24 @@ class TaskBase(BaseModel):
     recurrence_interval: Optional[int] = 1
     parent_task_id: Optional[int] = None
     next_occurrence: Optional[datetime] = None
+
+    @field_validator('due_date', 'recurrence_end_date', 'next_occurrence', mode='before')
+    @classmethod
+    def parse_datetime_fields(cls, value):
+        """
+        Parse datetime fields from various formats (ISO strings, date strings, etc.)
+        This handles both datetime strings and date-only strings from frontend
+        """
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value
+        try:
+            # Try to parse using dateutil (handles most formats)
+            return dateutil_parser.parse(value)
+        except (ValueError, TypeError):
+            # If parsing fails, return None
+            return None
 
 class TaskCreate(TaskBase):
     pass
