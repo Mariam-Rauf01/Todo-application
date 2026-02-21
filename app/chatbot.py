@@ -1676,4 +1676,4 @@ async def delete_single_message(
         db.commit()
         return {"message": "Message deleted"}
     else:
-        raise HTTPException(status_code=404, detail="Message not found")}
+        raise HTTPException(status_code=404, detail="Message not found")
