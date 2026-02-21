@@ -75,23 +75,13 @@ export default function FloatingChatbot() {
     }
   }, []);
 
-  // Debug: log when messages change
-  useEffect(() => {
-    console.log('📬 Messages updated:', messages.length, 'messages');
-    messages.forEach((m, i) => console.log(`  ${i}: ${m.sender} - ${m.text.substring(0, 30)}...`));
-  }, [messages]);
-
   // Reload chat history when user changes
   useEffect(() => {
-    console.log('User ID changed:', userId);
     if (userId) {
-      console.log('Loading messages for user:', userId);
       // Always load from backend database (source of truth)
       loadMessagesFromDb().then((hasMessages) => {
-        console.log('Has messages from DB:', hasMessages);
         if (!hasMessages) {
           // Show welcome message if no messages in DB
-          console.log('No messages in DB, showing welcome message');
           setMessages([getWelcomeMessage()]);
         }
       });
@@ -103,37 +93,28 @@ export default function FloatingChatbot() {
     try {
       const token = localStorage.getItem('access_token');
       if (!token) {
-        console.log('No token, showing welcome message');
         return false;
       }
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-      console.log('Loading messages from:', `${backendUrl}/api/chatbot/messages?limit=50`);
-      
+
       const response = await fetch(`${backendUrl}/api/chatbot/messages?limit=50`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      console.log('Response status:', response.status);
-
       if (response.ok) {
         const dbMessages = await response.json();
-        console.log('DB Messages loaded:', dbMessages.length, 'messages');
-        console.log('Raw DB messages:', dbMessages);
 
         if (dbMessages && dbMessages.length > 0) {
           // Backend returns in ascending order (oldest first) - display as is
           const formattedMessages: Message[] = dbMessages.map((m: any) => ({
             id: m.id.toString(),
-            text: m.message,  // For both user and bot, message is in 'message' field
+            text: m.message,
             sender: m.sender === 'user' ? 'user' : 'bot',
             timestamp: new Date(m.created_at)
           }));
-
-          console.log('Formatted messages:', formattedMessages.length);
-          console.log('First few messages:', formattedMessages.slice(0, 3));
 
           setMessages(formattedMessages);
           // Also save to localStorage
@@ -142,19 +123,13 @@ export default function FloatingChatbot() {
           // Scroll to bottom after loading
           setTimeout(() => scrollToBottom(), 100);
 
-          return true; // Return true if messages loaded
-        } else {
-          console.log('No messages in database');
+          return true;
         }
-      } else {
-        console.error('Failed to load messages, status:', response.status);
-        const errorText = await response.text();
-        console.error('Error details:', errorText);
       }
     } catch (e) {
       console.error('Error loading messages from DB:', e);
     }
-    return false; // Return false if no messages
+    return false;
   };
 
   const getWelcomeMessage = (): Message => ({
@@ -180,19 +155,18 @@ export default function FloatingChatbot() {
     try {
       const token = localStorage.getItem('access_token');
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-      
+
       // Clear from backend DB
       await fetch(`${backendUrl}/api/chatbot/messages`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
+
       // Clear from localStorage
       localStorage.removeItem(getChatStorageKey());
-      
+
       // Show welcome message
       setMessages([getWelcomeMessage()]);
-      console.log('Chat cleared successfully');
     } catch (error) {
       console.error('Error clearing chat:', error);
     }
@@ -260,17 +234,12 @@ export default function FloatingChatbot() {
       const token = localStorage.getItem('access_token');
       const userId = localStorage.getItem('user_id');
 
-      console.log('Saving message to DB:', { message, response, sender, hasToken: !!token, userId });
-
       if (!token) {
-        console.warn('No auth token found, skipping save to DB');
         return;
       }
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
       const url = `${backendUrl}/api/chatbot/messages`;
-
-      console.log('Posting to:', url);
 
       const res = await fetch(url, {
         method: 'POST',
@@ -285,13 +254,8 @@ export default function FloatingChatbot() {
         })
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        console.log('Message saved successfully:', data);
-        return data;
-      } else {
-        const error = await res.text();
-        console.error('Failed to save message:', res.status, error);
+      if (!res.ok) {
+        console.error('Failed to save message:', res.status);
       }
     } catch (e) {
       console.error('Error saving message to database:', e);
@@ -329,7 +293,6 @@ export default function FloatingChatbot() {
           case 'add':
             // Task already created by backend, just refresh
             refresh = true;
-            console.log('✅ Task created via backend, will refresh tasks list');
             break;
 
           case 'update':
@@ -342,7 +305,7 @@ export default function FloatingChatbot() {
                 },
                 body: JSON.stringify(action.updates)
               });
-              
+
               if (!response.ok) {
                 console.error('Failed to update task:', response.status);
               }
@@ -358,7 +321,7 @@ export default function FloatingChatbot() {
                   'Authorization': `Bearer ${token}`
                 }
               });
-              
+
               if (!response.ok) {
                 console.error('Failed to delete task:', response.status);
               }
@@ -376,7 +339,7 @@ export default function FloatingChatbot() {
                 },
                 body: JSON.stringify({ status: 'completed' })
               });
-              
+
               if (!response.ok) {
                 console.error('Failed to complete task:', response.status);
               }
@@ -386,21 +349,19 @@ export default function FloatingChatbot() {
 
           case 'list':
             // Just display, no DB action needed
-            console.log('📋 Listing tasks');
             break;
-            
+
           default:
-            console.log('Unknown action:', action.action);
+            break;
         }
       } catch (e) {
-        console.error('❌ Failed to execute action:', action, e);
+        console.error('Failed to execute action:', e);
       }
     }
 
     if (refresh) {
       // Wait a moment before refreshing to ensure backend has updated
       await new Promise(resolve => setTimeout(resolve, 800));
-      console.log('🔄 Refreshing tasks list...');
       window.dispatchEvent(new Event("refresh-tasks"));
     }
   };
@@ -408,8 +369,6 @@ export default function FloatingChatbot() {
   const handleSendMessage = async () => {
     const text = inputText.trim();
     if (!text || isLoading) return;
-
-    console.log('📤 Sending message:', text);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -420,23 +379,22 @@ export default function FloatingChatbot() {
 
     // Add user message immediately
     setMessages(prev => [...prev, userMessage]);
-    console.log('➕ User message added to state');
     setInputText('');
     setIsLoading(true);
-    setLastTaskAction(null); // Reset task action tracker
+    setLastTaskAction(null);
 
-    // Check if user is performing task operations (based on their message)
+    // Check if user is performing task operations
     const userMessageLower = text.toLowerCase();
-    const isTaskOperation = 
+    const isTaskOperation =
       userMessageLower.includes('create') || userMessageLower.includes('add') ||
       userMessageLower.includes('banao') || userMessageLower.includes('naya') ||
       userMessageLower.includes('update') || userMessageLower.includes('edit') ||
-      userMessageLower.includes('delete') || userMessageLower.includes('remove') || 
+      userMessageLower.includes('delete') || userMessageLower.includes('remove') ||
       userMessageLower.includes('hatao') ||
       userMessageLower.includes('complete') || userMessageLower.includes('mark') ||
       userMessageLower.includes('done') || userMessageLower.includes('tick') ||
       userMessageLower.includes('karo') || userMessageLower.includes('status');
-    
+
     // If it's a task operation, don't scroll to bottom - keep showing older messages
     if (isTaskOperation) {
       shouldScrollRef.current = false;
@@ -464,64 +422,60 @@ export default function FloatingChatbot() {
           const data = await aiResponse.json();
           response = data.response;
 
-          // Parse and execute JSON blocks from response (but don't display JSON to user)
+          // Parse and execute JSON blocks from response
           const jsonBlocks = parseJsonBlocks(response);
-          
+
           // Remove JSON blocks from the displayed message
           let cleanResponse = response.replace(/```json\n[\s\S]*?\n```/g, '').trim();
-          
-          // Remove task list if present (lines starting with ⬜ or ✅, or "📋 Your recent tasks" section)
+
+          // Remove task list if present
           const lines = cleanResponse.split('\n');
           const filteredLines: string[] = [];
           let skipSection = false;
-          
+
           for (const line of lines) {
             const trimmedLine = line.trim();
-            
+
             // Skip task list headers and task items
-            if (trimmedLine.includes('📋 Your recent tasks') || 
+            if (trimmedLine.includes('📋 Your recent tasks') ||
                 trimmedLine.includes('📋 Pending Tasks') ||
                 trimmedLine.includes('📋 Your Tasks')) {
               skipSection = true;
               continue;
             }
-            
+
             // Skip task items (lines with ⬜ or ✅)
             if (trimmedLine.startsWith('⬜') || trimmedLine.startsWith('✅')) {
               continue;
             }
-            
+
             // If we hit a non-task line, stop skipping
             if (trimmedLine && !trimmedLine.startsWith('-') && !trimmedLine.startsWith('•')) {
               skipSection = false;
             }
-            
+
             // Add line if not skipping and not empty or part of task list
             if (!skipSection && trimmedLine) {
               filteredLines.push(line);
             }
           };
-          
+
           cleanResponse = filteredLines.join('\n').trim();
-          
+
           // Remove any extra newlines
           cleanResponse = cleanResponse.replace(/\n\s*\n/g, '\n').trim();
-          
+
           // If response is now empty or only contains "Here", show a generic confirmation
           if (!cleanResponse || cleanResponse.length < 5) {
             response = "✅ Done! Task updated successfully.";
           } else {
             response = cleanResponse;
           }
-          
-          console.log('Clean response:', response);
-          
+
           // Execute actions from JSON blocks or refresh if task operation detected
           if (jsonBlocks.length > 0) {
             await executeActions(jsonBlocks);
           } else if (isTaskOperation) {
-            // If user is doing a task operation but no JSON blocks, still refresh
-            console.log('🔄 Task operation detected, refreshing tasks...');
             await new Promise(resolve => setTimeout(resolve, 600));
             window.dispatchEvent(new Event("refresh-tasks"));
           }
@@ -540,19 +494,13 @@ export default function FloatingChatbot() {
         timestamp: new Date(),
       };
 
-      console.log('🤖 Bot response:', response);
-      console.log('➕ Adding bot message to state');
-      
       // Use functional update to get latest state
       setMessages(prev => [...prev, botMessage]);
-      console.log('✅ Bot message added');
 
       // Only scroll to bottom if not a task operation
       if (!lastTaskAction) {
         setTimeout(() => scrollToBottom(), 100);
       }
-
-      // Backend already saves messages in /chat endpoint, no need to save again
 
     } catch (error) {
       console.error("Chatbot error:", error);
@@ -678,7 +626,7 @@ export default function FloatingChatbot() {
                                   method: 'DELETE',
                                   headers: { 'Authorization': `Bearer ${token}` }
                                 });
-                              } catch(e) { console.log('Delete error:', e); }
+                              } catch(e) { /* Best effort delete */ }
                             }
                           }}
                           className="text-xs opacity-50 hover:opacity-100"

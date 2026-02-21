@@ -1567,7 +1567,6 @@ Respond naturally and include ```json ``` block ONLY if you're creating/updating
             db.commit()
             db.refresh(user_chat_message)
             db.refresh(bot_chat_message)
-            print(f"[CHATBOT] Messages saved: user_id={current_user.id}, user_msg_id={user_chat_message.id}, bot_msg_id={bot_chat_message.id}")
         except Exception as save_error:
             print(f"[CHATBOT] Error saving messages: {save_error}")
             # Don't fail the request if save fails

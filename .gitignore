@@ -2,3 +2,5 @@
 todos.db
 __pycache__/
 *.pyc
+*.tsbuildinfo
+frontend/*.tsbuildinfo
