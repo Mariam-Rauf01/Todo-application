@@ -122,9 +122,11 @@ export default function FloatingChatbot() {
 
         // Refresh tasks if action was performed
         if (data.action) {
-          setTimeout(() => {
-            window.dispatchEvent(new Event('refresh-tasks'));
-          }, 500);
+          // Force a hard refresh of tasks
+          localStorage.setItem('tasks-refresh-trigger', Date.now().toString());
+          window.dispatchEvent(new CustomEvent('refresh-tasks', { 
+            detail: { action: data.action, timestamp: Date.now() } 
+          }));
         }
       } else {
         setMessages(prev => [...prev, {

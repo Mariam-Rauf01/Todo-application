@@ -99,9 +99,27 @@ export default function TasksPage() {
     fetchTasks();
     setIsLoaded(true);
 
-    const handleRefresh = () => fetchTasks();
+    const handleRefresh = () => {
+      console.log('🔄 Refreshing tasks from chatbot action...');
+      fetchTasks();
+    };
+    
+    // Listen for refresh-tasks event
     window.addEventListener('refresh-tasks', handleRefresh);
-    return () => window.removeEventListener('refresh-tasks', handleRefresh);
+    
+    // Also listen for storage changes (for cross-tab sync)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'tasks-refresh-trigger') {
+        console.log('🔄 Storage change detected, refreshing tasks...');
+        fetchTasks();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('refresh-tasks', handleRefresh);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   useEffect(() => {
