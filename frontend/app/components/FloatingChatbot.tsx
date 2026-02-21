@@ -67,6 +67,12 @@ export default function FloatingChatbot() {
     }
   }, []);
 
+  // Debug: log when messages change
+  useEffect(() => {
+    console.log('📬 Messages updated:', messages.length, 'messages');
+    messages.forEach((m, i) => console.log(`  ${i}: ${m.sender} - ${m.text.substring(0, 30)}...`));
+  }, [messages]);
+
   // Reload chat history when user changes
   useEffect(() => {
     console.log('User ID changed:', userId);
@@ -381,12 +387,9 @@ export default function FloatingChatbot() {
       timestamp: new Date(),
     };
 
-    console.log('➕ Adding user message to state, current count:', messages.length);
-    setMessages(prev => {
-      const newMessages = [...prev, userMessage];
-      console.log('✅ User message added, new count:', newMessages.length);
-      return newMessages;
-    });
+    // Add user message immediately
+    setMessages(prev => [...prev, userMessage]);
+    console.log('➕ User message added to state');
     setInputText('');
     setIsLoading(true);
 
@@ -501,11 +504,13 @@ export default function FloatingChatbot() {
 
       console.log('🤖 Bot response:', response);
       console.log('➕ Adding bot message to state');
-      setMessages(prev => {
-        const newMessages = [...prev, botMessage];
-        console.log('✅ Bot message added, total count:', newMessages.length);
-        return newMessages;
-      });
+      
+      // Use functional update to get latest state
+      setMessages(prev => [...prev, botMessage]);
+      console.log('✅ Bot message added');
+
+      // Scroll to bottom after bot response
+      setTimeout(() => scrollToBottom(), 100);
 
       // Backend already saves messages in /chat endpoint, no need to save again
 
