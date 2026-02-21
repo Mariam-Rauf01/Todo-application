@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'bot';
   timestamp: Date;
+  isDeleted?: boolean;
 }
 
 interface Task {
@@ -37,10 +38,13 @@ export default function FloatingChatbot() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          return parsed.map((m: any) => ({
-            ...m,
-            timestamp: new Date(m.timestamp)
-          }));
+          // Filter out deleted messages and convert timestamps
+          return parsed
+            .filter((m: any) => !m.isDeleted)
+            .map((m: any) => ({
+              ...m,
+              timestamp: new Date(m.timestamp)
+            }));
         } catch {
           // If parsing fails, return default
         }
@@ -50,7 +54,9 @@ export default function FloatingChatbot() {
   });
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [lastTaskAction, setLastTaskAction] = useState<string | null>(null);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
+  const shouldScrollRef = useRef(true);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem('user_id');
@@ -161,6 +167,7 @@ export default function FloatingChatbot() {
     if (typeof window !== 'undefined' && messages.length > 0) {
       const hasRealMessages = messages.some(m => m.sender === 'user' || m.sender === 'bot');
       if (hasRealMessages) {
+        // Save all messages including deleted ones (with isDeleted flag)
         localStorage.setItem(getChatStorageKey(), JSON.stringify(messages));
       }
     }
@@ -202,14 +209,17 @@ export default function FloatingChatbot() {
   }, []);
 
   useEffect(() => {
-    // Scroll to bottom when messages change or chat opens
+    // Scroll to bottom when messages change or chat opens - only if shouldScrollRef is true
     const timer = setTimeout(() => {
-      scrollToBottom();
+      if (shouldScrollRef.current && messagesEndRef.current) {
+        scrollToBottom();
+      }
     }, 100);
     return () => clearTimeout(timer);
   }, [messages, isOpen]);
 
   const scrollToBottom = () => {
+    shouldScrollRef.current = true;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -396,6 +406,25 @@ export default function FloatingChatbot() {
     console.log('➕ User message added to state');
     setInputText('');
     setIsLoading(true);
+    setLastTaskAction(null); // Reset task action tracker
+
+    // Check if user is performing task operations (based on their message)
+    const userMessageLower = text.toLowerCase();
+    const isTaskOperation = 
+      userMessageLower.includes('create') || userMessageLower.includes('add') ||
+      userMessageLower.includes('banao') || userMessageLower.includes('naya') ||
+      userMessageLower.includes('update') || userMessageLower.includes('edit') ||
+      userMessageLower.includes('delete') || userMessageLower.includes('remove') || 
+      userMessageLower.includes('hatao') ||
+      userMessageLower.includes('complete') || userMessageLower.includes('mark') ||
+      userMessageLower.includes('done') || userMessageLower.includes('tick') ||
+      userMessageLower.includes('karo') || userMessageLower.includes('status');
+    
+    // If it's a task operation, don't scroll to bottom - keep showing older messages
+    if (isTaskOperation) {
+      shouldScrollRef.current = false;
+      setLastTaskAction('task');
+    }
 
     try {
       let response = '';
@@ -470,18 +499,6 @@ export default function FloatingChatbot() {
           
           console.log('Clean response:', response);
           
-          // Check if user is performing task operations (based on their message)
-          const userMessageLower = text.toLowerCase();
-          const isTaskOperation = 
-            userMessageLower.includes('create') || userMessageLower.includes('add') ||
-            userMessageLower.includes('banao') || userMessageLower.includes('naya') ||
-            userMessageLower.includes('update') || userMessageLower.includes('edit') ||
-            userMessageLower.includes('delete') || userMessageLower.includes('remove') || 
-            userMessageLower.includes('hatao') ||
-            userMessageLower.includes('complete') || userMessageLower.includes('mark') ||
-            userMessageLower.includes('done') || userMessageLower.includes('tick') ||
-            userMessageLower.includes('karo') || userMessageLower.includes('status');
-          
           // Execute actions from JSON blocks or refresh if task operation detected
           if (jsonBlocks.length > 0) {
             await executeActions(jsonBlocks);
@@ -513,8 +530,10 @@ export default function FloatingChatbot() {
       setMessages(prev => [...prev, botMessage]);
       console.log('✅ Bot message added');
 
-      // Scroll to bottom after bot response
-      setTimeout(() => scrollToBottom(), 100);
+      // Only scroll to bottom if not a task operation
+      if (!lastTaskAction) {
+        setTimeout(() => scrollToBottom(), 100);
+      }
 
       // Backend already saves messages in /chat endpoint, no need to save again
 
@@ -599,7 +618,7 @@ export default function FloatingChatbot() {
 
             {/* Messages Area - newest at bottom like WhatsApp */}
             <div className="h-72 overflow-y-auto p-3 space-y-2 bg-gradient-to-b from-purple-50 to-blue-50 flex flex-col justify-end">
-              {messages.map((message, idx) => (
+              {messages.filter(m => !m.isDeleted).map((message, idx) => (
                 <div
                   key={message.id}
                   className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
@@ -610,18 +629,25 @@ export default function FloatingChatbot() {
                       <span className="flex-1">{message.text}</span>
                       {message.sender === 'user' && (
                         <button
-                          onClick={async () => {
+                          onClick={() => {
                             if (confirm('Delete this message?')) {
-                              // Delete from database first
+                              // Mark message as deleted in state and localStorage
+                              setMessages(prev => {
+                                const updated = prev.map(m => 
+                                  m.id === message.id ? { ...m, isDeleted: true } : m
+                                );
+                                // Also update localStorage
+                                localStorage.setItem(getChatStorageKey(), JSON.stringify(updated));
+                                return updated;
+                              });
+                              // Try to delete from database (best effort)
                               try {
                                 const token = localStorage.getItem('access_token');
-                                await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/api/chatbot/messages/${message.id}`, {
+                                fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/api/chatbot/messages/${message.id}`, {
                                   method: 'DELETE',
                                   headers: { 'Authorization': `Bearer ${token}` }
                                 });
                               } catch(e) { console.log('Delete error:', e); }
-                              // Then remove from UI
-                              setMessages(prev => prev.filter(m => m.id !== message.id));
                             }
                           }}
                           className="text-xs opacity-50 hover:opacity-100"
