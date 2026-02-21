@@ -127,15 +127,10 @@ export default function FloatingChatbot() {
           localStorage.setItem('tasks-refresh-trigger', timestamp.toString());
           
           // Dispatch event for same-page refresh
-          window.dispatchEvent(new CustomEvent('refresh-tasks', { 
+          const event = new CustomEvent('refresh-tasks', { 
             detail: { action: data.action, timestamp } 
-          }));
-          
-          // Also trigger storage event for same tab
-          window.dispatchEvent(new StorageEvent('storage', {
-            key: 'tasks-refresh-trigger',
-            newValue: timestamp.toString()
-          }));
+          });
+          window.dispatchEvent(event);
           
           console.log('✅ Task action completed, triggering refresh:', data.action);
         }

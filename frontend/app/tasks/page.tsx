@@ -108,28 +108,20 @@ export default function TasksPage() {
     // Listen for refresh-tasks event from chatbot
     window.addEventListener('refresh-tasks', handleRefresh);
     
-    // Poll for changes every 5 seconds when page is visible
-    const pollInterval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        fetchTasks();
-      }
-    }, 5000);
-    
-    // Also check for chatbot trigger on mount
+    // Check for chatbot trigger on mount (if user navigated from chatbot)
     const lastTrigger = localStorage.getItem('tasks-refresh-trigger');
     if (lastTrigger) {
       const triggerTime = parseInt(lastTrigger);
       const now = Date.now();
-      // If trigger was in last 10 seconds, refresh
-      if (now - triggerTime < 10000) {
+      // If trigger was in last 30 seconds, refresh immediately
+      if (now - triggerTime < 30000) {
         console.log('🔄 Recent chatbot action detected, refreshing...');
-        setTimeout(() => fetchTasks(), 100);
+        setTimeout(() => fetchTasks(), 50);
       }
     }
     
     return () => {
       window.removeEventListener('refresh-tasks', handleRefresh);
-      clearInterval(pollInterval);
     };
   }, []);
 
