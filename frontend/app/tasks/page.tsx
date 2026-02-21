@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import FloatingChatbot from '../components/FloatingChatbot';
 
 interface Task {
   id: number;
@@ -1180,9 +1179,6 @@ export default function TasksPage() {
           </div>
         </div>
       )}
-
-      {/* Floating Chatbot */}
-      <FloatingChatbot />
 
       {/* Custom Animations */}
       <style jsx global>{`
