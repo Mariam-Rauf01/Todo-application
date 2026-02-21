@@ -31,11 +31,6 @@ export default function FloatingChatbot() {
     return uid ? `chat_history_${uid}` : 'chat_history';
   };
 
-  const getChatClearedKey = () => {
-    const uid = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
-    return uid ? `chat_cleared_${uid}` : 'chat_cleared';
-  };
-
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(getChatStorageKey());
@@ -77,50 +72,15 @@ export default function FloatingChatbot() {
     console.log('User ID changed:', userId);
     if (userId) {
       console.log('Loading messages for user:', userId);
-      // Check if chat was cleared
-      const isChatCleared = localStorage.getItem(getChatClearedKey()) === 'true';
-      console.log('Chat cleared flag:', isChatCleared);
-      
-      if (isChatCleared) {
-        // Chat was cleared, don't reload from DB
-        console.log('Chat was cleared, showing empty chat with message');
-        setMessages([{
-          id: Date.now().toString(),
-          text: "Chat cleared! 🧹 How can I help you?",
-          sender: 'bot',
-          timestamp: new Date()
-        }]);
-      } else {
-        // Try to load from backend database first
-        loadMessagesFromDb().then((hasMessages) => {
-          console.log('Has messages from DB:', hasMessages);
-          if (!hasMessages) {
-            // Only show welcome message if no messages in DB
-            const saved = localStorage.getItem(getChatStorageKey());
-            console.log('Local storage key:', getChatStorageKey());
-            console.log('Local storage has data:', !!saved);
-            if (saved) {
-              try {
-                const parsed = JSON.parse(saved);
-                const localMessages = parsed.map((m: any) => ({
-                  ...m,
-                  timestamp: new Date(m.timestamp)
-                }));
-                if (localMessages.length > 0) {
-                  console.log('Loaded from localStorage:', localMessages.length);
-                  setMessages(localMessages);
-                } else {
-                  setMessages([getWelcomeMessage()]);
-                }
-              } catch {
-                setMessages([getWelcomeMessage()]);
-              }
-            } else {
-              setMessages([getWelcomeMessage()]);
-            }
-          }
-        });
-      }
+      // Always load from backend database (source of truth)
+      loadMessagesFromDb().then((hasMessages) => {
+        console.log('Has messages from DB:', hasMessages);
+        if (!hasMessages) {
+          // Show welcome message if no messages in DB
+          console.log('No messages in DB, showing welcome message');
+          setMessages([getWelcomeMessage()]);
+        }
+      });
     }
   }, [userId]);
 
@@ -190,18 +150,38 @@ export default function FloatingChatbot() {
     timestamp: new Date(),
   });
 
-  // Save chat history to localStorage whenever messages change
+  // Save chat history to localStorage (backup only - DB is source of truth)
   useEffect(() => {
     if (typeof window !== 'undefined' && messages.length > 0) {
-      // Check if we have actual user/bot messages (not just the cleared message)
-      const hasRealMessages = messages.some(m => m.text !== "Chat cleared! 🧹 How can I help you?");
+      const hasRealMessages = messages.some(m => m.sender === 'user' || m.sender === 'bot');
       if (hasRealMessages) {
         localStorage.setItem(getChatStorageKey(), JSON.stringify(messages));
-        // Clear the "cleared" flag when new messages are added
-        localStorage.removeItem(getChatClearedKey());
       }
     }
   }, [messages]);
+
+  // Clear chat function
+  const clearChat = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      
+      // Clear from backend DB
+      await fetch(`${backendUrl}/api/chatbot/messages`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      // Clear from localStorage
+      localStorage.removeItem(getChatStorageKey());
+      
+      // Show welcome message
+      setMessages([getWelcomeMessage()]);
+      console.log('Chat cleared successfully');
+    } catch (error) {
+      console.error('Error clearing chat:', error);
+    }
+  };
 
   // Clear chat when user logs out
   useEffect(() => {
@@ -567,16 +547,7 @@ export default function FloatingChatbot() {
                 <span className="text-white font-semibold">✨ Task Assistant</span>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => {
-                      localStorage.removeItem(getChatStorageKey());
-                      localStorage.setItem(getChatClearedKey(), 'true');
-                      setMessages([{
-                        id: Date.now().toString(),
-                        text: "Chat cleared! 🧹 How can I help you?",
-                        sender: 'bot',
-                        timestamp: new Date()
-                      }]);
-                    }}
+                    onClick={clearChat}
                     className="text-white/80 hover:text-white text-xs"
                     title="Clear chat"
                   >
