@@ -132,7 +132,12 @@ export default function FloatingChatbot() {
           });
           window.dispatchEvent(event);
           
-          console.log('✅ Task action completed, triggering refresh:', data.action);
+          // Force reload the tasks page to show new task
+          setTimeout(() => {
+            window.location.href = '/tasks';
+          }, 500);
+          
+          console.log('✅ Task action completed, redirecting to tasks page:', data.action);
         }
       } else {
         setMessages(prev => [...prev, {

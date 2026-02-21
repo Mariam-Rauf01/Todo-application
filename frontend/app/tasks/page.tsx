@@ -962,35 +962,7 @@ export default function TasksPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2 sm:flex-col sm:gap-2">
-                              {/* Quick Actions Toolbar */}
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => handleUpdateTask(task.id, { priority: task.priority === 'high' ? 'medium' : task.priority === 'medium' ? 'low' : 'high' })}
-                                  className="p-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
-                                  title="Cycle Priority"
-                                >
-                                  <span>🔥</span>
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    const newDate = prompt('Enter new due date (YYYY-MM-DD):', task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '');
-                                    if (newDate) handleUpdateTask(task.id, { due_date: newDate });
-                                  }}
-                                  className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
-                                  title="Update Due Date"
-                                >
-                                  <span>📅</span>
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    const newCat = prompt('Enter category:', task.category || '');
-                                    if (newCat !== null) handleUpdateTask(task.id, { category: newCat || null });
-                                  }}
-                                  className="p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
-                                  title="Update Category"
-                                >
-                                  <span>📁</span>
-                                </button>
+                              <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => {
                                     setEditingTask(task);
