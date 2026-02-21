@@ -594,7 +594,7 @@ export default function FloatingChatbot() {
             </div>
 
             {/* Messages Area */}
-            <div className="h-72 overflow-y-auto p-3 space-y-2 bg-gradient-to-b from-purple-50 to-blue-50">
+            <div className="h-72 overflow-y-auto p-3 space-y-2 bg-gradient-to-b from-purple-50 to-blue-50 flex flex-col justify-end">
               {messages.map((message, idx) => (
                 <div
                   key={message.id}
