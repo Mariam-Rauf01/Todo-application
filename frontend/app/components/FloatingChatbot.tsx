@@ -122,11 +122,22 @@ export default function FloatingChatbot() {
 
         // Refresh tasks if action was performed
         if (data.action) {
-          // Force a hard refresh of tasks
-          localStorage.setItem('tasks-refresh-trigger', Date.now().toString());
+          const timestamp = Date.now();
+          // Store timestamp for cross-page sync
+          localStorage.setItem('tasks-refresh-trigger', timestamp.toString());
+          
+          // Dispatch event for same-page refresh
           window.dispatchEvent(new CustomEvent('refresh-tasks', { 
-            detail: { action: data.action, timestamp: Date.now() } 
+            detail: { action: data.action, timestamp } 
           }));
+          
+          // Also trigger storage event for same tab
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: 'tasks-refresh-trigger',
+            newValue: timestamp.toString()
+          }));
+          
+          console.log('✅ Task action completed, triggering refresh:', data.action);
         }
       } else {
         setMessages(prev => [...prev, {

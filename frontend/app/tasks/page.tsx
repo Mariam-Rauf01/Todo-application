@@ -96,29 +96,40 @@ export default function TasksPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Always fetch fresh tasks when page loads
     fetchTasks();
     setIsLoaded(true);
 
     const handleRefresh = () => {
-      console.log('🔄 Refreshing tasks from chatbot action...');
+      console.log('🔄 Refreshing tasks from event...');
       fetchTasks();
     };
     
-    // Listen for refresh-tasks event
+    // Listen for refresh-tasks event from chatbot
     window.addEventListener('refresh-tasks', handleRefresh);
     
-    // Also listen for storage changes (for cross-tab sync)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'tasks-refresh-trigger') {
-        console.log('🔄 Storage change detected, refreshing tasks...');
+    // Poll for changes every 5 seconds when page is visible
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
         fetchTasks();
       }
-    };
-    window.addEventListener('storage', handleStorageChange);
+    }, 5000);
+    
+    // Also check for chatbot trigger on mount
+    const lastTrigger = localStorage.getItem('tasks-refresh-trigger');
+    if (lastTrigger) {
+      const triggerTime = parseInt(lastTrigger);
+      const now = Date.now();
+      // If trigger was in last 10 seconds, refresh
+      if (now - triggerTime < 10000) {
+        console.log('🔄 Recent chatbot action detected, refreshing...');
+        setTimeout(() => fetchTasks(), 100);
+      }
+    }
     
     return () => {
       window.removeEventListener('refresh-tasks', handleRefresh);
-      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(pollInterval);
     };
   }, []);
 
