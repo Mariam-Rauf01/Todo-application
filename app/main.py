@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from . import auth, tasks, chatbot
+from . import auth, tasks
 from .database import engine, Base
 
 # Create database tables
@@ -55,7 +55,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # Include API routes
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
-app.include_router(chatbot.router, prefix="/api/chatbot", tags=["chatbot"])
 
 # Serve static files (frontend HTML)
 static_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
