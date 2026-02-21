@@ -848,6 +848,8 @@
             // Use the stored reference to addTaskBtn
             addTaskBtn.addEventListener('click', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
+                
                 if (addTaskBtn.hasAttribute('data-task-id')) {
                     // If the button has a task ID, it means we're updating
                     const taskId = parseInt(addTaskBtn.getAttribute('data-task-id'));
@@ -856,6 +858,8 @@
                     // Otherwise, we're adding a new task
                     addNewTask();
                 }
+                
+                return false;
             });
 
             filterButtons.forEach(button => {
