@@ -55,7 +55,9 @@ export default function FloatingChatbot() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [lastTaskAction, setLastTaskAction] = useState<string | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(true);
 
   useEffect(() => {
@@ -221,6 +223,21 @@ export default function FloatingChatbot() {
   const scrollToBottom = () => {
     shouldScrollRef.current = true;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToTop = () => {
+    shouldScrollRef.current = false;
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = 0;
+    }
+  };
+
+  const handleScroll = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      const atBottom = scrollHeight - scrollTop - clientHeight < 50;
+      setIsAtBottom(atBottom);
+    }
   };
 
   const fetchTasks = async (): Promise<Task[]> => {
@@ -617,7 +634,21 @@ export default function FloatingChatbot() {
             </div>
 
             {/* Messages Area - newest at bottom like WhatsApp */}
-            <div className="h-72 overflow-y-auto p-3 space-y-2 bg-gradient-to-b from-purple-50 to-blue-50 flex flex-col justify-end">
+            <div 
+              ref={messagesContainerRef}
+              onScroll={handleScroll}
+              className="h-72 overflow-y-auto p-3 space-y-2 bg-gradient-to-b from-purple-50 to-blue-50 flex flex-col justify-end relative"
+            >
+              {/* Scroll buttons */}
+              {!isAtBottom && (
+                <button
+                  onClick={scrollToBottom}
+                  className="absolute bottom-2 right-2 bg-purple-500 text-white rounded-full p-2 shadow-lg hover:bg-purple-600 z-10"
+                  title="Scroll to bottom"
+                >
+                  ↓
+                </button>
+              )}
               {messages.filter(m => !m.isDeleted).map((message, idx) => (
                 <div
                   key={message.id}

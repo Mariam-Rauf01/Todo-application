@@ -308,6 +308,11 @@ def parse_single_command(message: str) -> Dict[str, Any]:
         (r"update\s+karo", "update task"),
         (r"task\s+badlo", "update task"),
         (r"change\s+task", "update task"),
+        # Task incomplete / undo
+        (r"task\s+incomplete\s+karo", "incomplete task"),
+        (r"task\s+undo\s+karo", "incomplete task"),
+        (r"task\+wapas\s+karo", "incomplete task"),
+        (r"task\s+pending\s+karo", "incomplete task"),
         # Priority
         (r"zyada\s+important", "high priority"),
         (r"urgent", "high priority"),
@@ -365,6 +370,17 @@ def parse_single_command(message: str) -> Dict[str, Any]:
         r"task\s+update\s+(.+?)\s+to\s+(.+)",
         # Pattern: "update my task X to Y"
         r"update\s+my\s+task\s+(.+?)\s+to\s+(.+)",
+        # Roman Urdu patterns for update
+        r"task\s+badlo\s+(.+?)\s+se\s+(.+)",
+        r"task\s+badlo\s+(.+?)\s+ko\s+(.+)",
+        r"task\s+update\s+karo\s+(.+)",
+        # Incomplete / Undo patterns
+        r"incomplete\s+task\s+(.+)",
+        r"undo\s+task\s+(.+)",
+        r"pending\s+task\s+(.+)",
+        r"wapas\s+task\s+(.+)",
+        r"task\s+incomplete\s+karo\s+(.+)",
+        r"task\s+undo\s+karo\s+(.+)",
     ]
 
     delete_patterns = [
@@ -483,6 +499,9 @@ def parse_single_command(message: str) -> Dict[str, Any]:
             elif "as completed" in message_lower or "complete" in message_lower:
                 update_type = "status"
                 new_value = "completed"
+            elif "incomplete" in message_lower or "undo" in message_lower or "pending" in message_lower or "wapas" in message_lower:
+                update_type = "status"
+                new_value = "pending"
             else:
                 update_type = "other"
 
@@ -558,6 +577,13 @@ def parse_single_command(message: str) -> Dict[str, Any]:
         r"my\s+email",
         r"tell\s+about\s+me",
         r"identify\s+me",
+        # Roman Urdu patterns
+        r"main\s+kon\s+hun",
+        r"mein\s+kon\s+hun",
+        r"mera\s+naam",
+        r"meri\s+email",
+        r"mujhe\s+pehchano",
+        r"kon\s+hai\s+ye",
     ]
     for pattern in who_am_i_patterns:
         if re.search(pattern, message_lower):
@@ -1185,8 +1211,23 @@ Would you like me to create a task with a due date instead? 😊"""
             from datetime import datetime
             created_date = current_user.created_at.strftime('%Y-%m-%d %H:%M') if current_user.created_at else 'N/A'
             is_active = "✅ Active" if current_user.is_active else "❌ Inactive"
+            
+            # Check if message is in Roman Urdu
+            msg_lower = chat_request.message.lower()
+            is_roman_urdu = any(word in msg_lower for word in ['main', 'kon', 'mera', 'meri', 'mujhe', 'hai', 'hum', 'ap'])
+            
+            if is_roman_urdu:
+                response_text = f"""👤 AAPKI PROFILE INFO:
 
-            response_text = f"""👤 YOUR PROFILE INFO:
+📧 Email: {current_user.email}
+👨‍💼 Naam: {current_user.full_name}
+🆔 User ID: {current_user.id}
+📊 Status: {is_active}
+📅 Join kiya: {created_date}
+
+Aapko apni saari tasks manage karne ka access hai! 😊"""
+            else:
+                response_text = f"""👤 YOUR PROFILE INFO:
 
 📧 Email: {current_user.email}
 👨‍💼 Name: {current_user.full_name}
