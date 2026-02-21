@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 interface Message {
   id: string;
@@ -8,6 +8,7 @@ interface Message {
   sender: 'user' | 'bot';
   timestamp: Date;
   language?: string;
+  isDeleted?: boolean;
 }
 
 interface Task {
@@ -30,17 +31,39 @@ export default function AIAssistant() {
     data: any;
     message: string;
   } | null>(null);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: "Hey there! 👋 I'm your intelligent AI Task Assistant. I can understand natural conversations in any language. Tell me what you need help with - I can help you manage tasks, answer questions, or just chat! 😊",
-      sender: 'bot',
-      timestamp: new Date(),
+  const [messages, setMessages] = useState<Message[]>(() => {
+    // Load messages from localStorage on initial render
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('chat_messages');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // Convert timestamp strings back to Date objects and filter deleted messages
+          return parsed
+            .filter((msg: any) => !msg.isDeleted)
+            .map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp)
+            }));
+        } catch (e) {
+          console.error('Error parsing saved messages:', e);
+        }
+      }
     }
-  ]);
+    return [
+      {
+        id: '1',
+        text: "Hey there! 👋 I'm your intelligent AI Task Assistant. I can understand natural conversations in any language. Tell me what you need help with - I can help you manage tasks, answer questions, or just chat! 😊",
+        sender: 'bot',
+        timestamp: new Date(),
+      }
+    ];
+  });
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [lastTaskAction, setLastTaskAction] = useState<string | null>(null);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
+  const shouldScrollRef = useRef(true);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem('user_id');
@@ -55,11 +78,23 @@ export default function AIAssistant() {
     }
   }, []);
 
+  // Save messages to localStorage whenever they change
   useEffect(() => {
-    scrollToBottom();
+    if (typeof window !== 'undefined' && messages.length > 0) {
+      // Save all messages including deleted ones (with isDeleted flag)
+      localStorage.setItem('chat_messages', JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  // Handle scrolling - only scroll to bottom for new chat messages, not for task actions
+  useEffect(() => {
+    if (shouldScrollRef.current && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isOpen]);
 
   const scrollToBottom = () => {
+    shouldScrollRef.current = true;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -376,7 +411,10 @@ export default function AIAssistant() {
             sender: 'bot',
             timestamp: new Date(),
           };
+          // Don't scroll to bottom - keep showing older messages
+          shouldScrollRef.current = false;
           setMessages(prev => [...prev, botMessage]);
+          setLastTaskAction('delete');
         } else if (pendingAction.type === 'update') {
           const updated = await updateTask(pendingAction.data.oldTitle, pendingAction.data.newTitle);
           const response = updated
@@ -389,7 +427,10 @@ export default function AIAssistant() {
             sender: 'bot',
             timestamp: new Date(),
           };
+          // Don't scroll to bottom - keep showing older messages
+          shouldScrollRef.current = false;
           setMessages(prev => [...prev, botMessage]);
+          setLastTaskAction('update');
         }
       } else if (isCancel) {
         const botMessage: Message = {
@@ -428,9 +469,14 @@ export default function AIAssistant() {
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);
+    setLastTaskAction(null); // Reset task action tracker
 
     try {
       const parsed = await parseNaturalLanguage(textToSend);
+      
+      // Check if this is a task action (create, update, delete)
+      const isTaskAction = ['create', 'update', 'delete'].includes(parsed.action);
+      
       const result = await generateAIResponse(textToSend, parsed.language, parsed.action, parsed);
       
       // Handle both string and object responses
@@ -446,6 +492,12 @@ export default function AIAssistant() {
           timestamp: new Date(),
           language: parsed.language,
         };
+        
+        // If it's a task action, don't scroll to bottom - keep showing older messages
+        if (isTaskAction) {
+          shouldScrollRef.current = false;
+          setLastTaskAction(parsed.action);
+        }
         setMessages(prev => [...prev, botMessage]);
       }
       
@@ -477,6 +529,33 @@ export default function AIAssistant() {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+
+  // Delete a message (marks as deleted in localStorage)
+  const deleteMessage = useCallback((messageId: string) => {
+    setMessages(prev => {
+      const updatedMessages = prev.map(msg => 
+        msg.id === messageId ? { ...msg, isDeleted: true } : msg
+      );
+      // Save to localStorage immediately after state update
+      setTimeout(() => {
+        localStorage.setItem('chat_messages', JSON.stringify(updatedMessages));
+      }, 0);
+      return updatedMessages;
+    });
+  }, []);
+
+  // Clear all chat history
+  const clearChatHistory = useCallback(() => {
+    setMessages([
+      {
+        id: '1',
+        text: "Hey there! 👋 I'm your intelligent AI Task Assistant. I can understand natural conversations in any language. Tell me what you need help with - I can help you manage tasks, answer questions, or just chat! 😊",
+        sender: 'bot',
+        timestamp: new Date(),
+      }
+    ]);
+    localStorage.removeItem('chat_messages');
+  }, []);
 
   return (
     <>
@@ -536,13 +615,24 @@ export default function AIAssistant() {
 
           {/* Messages Container */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-96 bg-gray-50">
-            {messages.map((message) => (
+            {/* Clear chat button */}
+            {messages.length > 1 && (
+              <div className="flex justify-center mb-2">
+                <button
+                  onClick={clearChatHistory}
+                  className="text-xs text-red-500 hover:text-red-700 underline"
+                >
+                  Clear Chat History
+                </button>
+              </div>
+            )}
+            {messages.filter(msg => !msg.isDeleted).map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-xs px-4 py-2 rounded-lg ${
+                  className={`max-w-xs px-4 py-2 rounded-lg group relative ${
                     message.sender === 'user'
                       ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-br-none'
                       : 'bg-gray-200 text-gray-800 rounded-bl-none'
@@ -550,6 +640,14 @@ export default function AIAssistant() {
                 >
                   <p className="text-sm break-words whitespace-pre-wrap">{message.text}</p>
                   <p className="text-xs opacity-70 mt-1">{formatTime(message.timestamp)}</p>
+                  {/* Delete button */}
+                  <button
+                    onClick={() => deleteMessage(message.id)}
+                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600"
+                    title="Delete message"
+                  >
+                    ×
+                  </button>
                 </div>
               </div>
             ))}
