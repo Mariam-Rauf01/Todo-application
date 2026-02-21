@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import ChatBot from '../components/ChatBot';
 
 interface Task {
   id: number;
@@ -1241,6 +1242,9 @@ export default function TasksPage() {
         .animate-slide-up { animation: slide-up 0.4s ease-out; }
         .animate-fade-in { animation: fade-in 0.3s ease-out; }
       `}</style>
+
+      {/* ChatBot - Floating AI Assistant */}
+      <ChatBot />
     </div>
   );
 }
