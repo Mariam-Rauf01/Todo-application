@@ -126,18 +126,13 @@ export default function FloatingChatbot() {
           // Store timestamp for cross-page sync
           localStorage.setItem('tasks-refresh-trigger', timestamp.toString());
           
-          // Dispatch event for same-page refresh
+          // Dispatch event for same-page refresh (tasks page listens for this)
           const event = new CustomEvent('refresh-tasks', { 
             detail: { action: data.action, timestamp } 
           });
           window.dispatchEvent(event);
           
-          // Force reload the tasks page to show new task
-          setTimeout(() => {
-            window.location.href = '/tasks';
-          }, 500);
-          
-          console.log('✅ Task action completed, redirecting to tasks page:', data.action);
+          console.log('✅ Task action completed, refreshing tasks automatically:', data.action);
         }
       } else {
         setMessages(prev => [...prev, {
