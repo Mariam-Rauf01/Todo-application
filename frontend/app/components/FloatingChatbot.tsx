@@ -597,8 +597,8 @@ export default function FloatingChatbot() {
               </div>
             </div>
 
-            {/* Messages Area */}
-            <div className="h-72 overflow-y-auto p-3 space-y-2 bg-gradient-to-b from-purple-50 to-blue-50">
+            {/* Messages Area - newest at bottom like WhatsApp */}
+            <div className="h-72 overflow-y-auto p-3 space-y-2 bg-gradient-to-b from-purple-50 to-blue-50 flex flex-col justify-end">
               {messages.map((message, idx) => (
                 <div
                   key={message.id}
@@ -610,8 +610,17 @@ export default function FloatingChatbot() {
                       <span className="flex-1">{message.text}</span>
                       {message.sender === 'user' && (
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             if (confirm('Delete this message?')) {
+                              // Delete from database first
+                              try {
+                                const token = localStorage.getItem('access_token');
+                                await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/api/chatbot/messages/${message.id}`, {
+                                  method: 'DELETE',
+                                  headers: { 'Authorization': `Bearer ${token}` }
+                                });
+                              } catch(e) { console.log('Delete error:', e); }
+                              // Then remove from UI
                               setMessages(prev => prev.filter(m => m.id !== message.id));
                             }
                           }}

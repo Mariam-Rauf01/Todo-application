@@ -1655,3 +1655,25 @@ async def clear_chat_history(
     ).delete()
     db.commit()
     return {"message": "Chat history cleared"}
+
+# Endpoint to delete a single message
+@router.delete("/messages/{message_id}")
+async def delete_single_message(
+    message_id: int,
+    current_user: models.User = Depends(auth.get_current_user),
+    db = Depends(database.get_db)
+):
+    """
+    Delete a single message by ID
+    """
+    message = db.query(models.ChatMessage).filter(
+        models.ChatMessage.id == message_id,
+        models.ChatMessage.user_id == current_user.id
+    ).first()
+    
+    if message:
+        db.delete(message)
+        db.commit()
+        return {"message": "Message deleted"}
+    else:
+        raise HTTPException(status_code=404, detail="Message not found")}
