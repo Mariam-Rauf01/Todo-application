@@ -202,7 +202,11 @@ export default function FloatingChatbot() {
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
+    // Scroll to bottom when messages change or chat opens
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+    return () => clearTimeout(timer);
   }, [messages, isOpen]);
 
   const scrollToBottom = () => {
@@ -593,8 +597,8 @@ export default function FloatingChatbot() {
               </div>
             </div>
 
-            {/* Messages Area */}
-            <div className="h-72 overflow-y-auto p-3 space-y-2 bg-gradient-to-b from-purple-50 to-blue-50 flex flex-col justify-end">
+            {/* Messages Area - newest messages at bottom */}
+            <div className="h-72 overflow-y-auto p-3 space-y-2 bg-gradient-to-b from-purple-50 to-blue-50">
               {messages.map((message, idx) => (
                 <div
                   key={message.id}
