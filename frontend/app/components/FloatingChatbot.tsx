@@ -597,9 +597,10 @@ export default function FloatingChatbot() {
               </div>
             </div>
 
-            {/* Messages Area - oldest at top, newest at bottom */}
+            {/* Messages Area - newest at top like normal chat apps */}
             <div className="h-72 overflow-y-auto p-3 space-y-2 bg-gradient-to-b from-purple-50 to-blue-50">
-              {messages.map((message, idx) => (
+              {/* Reverse to show newest at top */}
+              {[...messages].reverse().map((message, idx) => (
                 <div
                   key={message.id}
                   className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
