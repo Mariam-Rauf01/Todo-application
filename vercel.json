@@ -1,0 +1,15 @@
+{
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "devCommand": "cd frontend && npm run dev",
+  "installCommand": "cd frontend && npm install",
+  "framework": "nextjs",
+  "outputDirectory": "frontend/.next",
+  "env": {
+    "NEXT_PUBLIC_BACKEND_URL": "https://mariam-rauf01-taskmate-todo-app.hf.space"
+  },
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 10
+    }
+  }
+}
