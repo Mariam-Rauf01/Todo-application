@@ -9,12 +9,9 @@ export default function ChatBotWrapper() {
 
   useEffect(() => {
     setMounted(true);
-    
-    // Check login status on mount
     const userId = localStorage.getItem('user_id');
     setIsLoggedIn(!!userId);
 
-    // Listen for login/logout events
     const handleLogin = () => setIsLoggedIn(true);
     const handleLogout = () => setIsLoggedIn(false);
 
@@ -28,6 +25,5 @@ export default function ChatBotWrapper() {
   }, []);
 
   if (!mounted) return null;
-
   return isLoggedIn ? <FloatingChatbot /> : null;
 }
