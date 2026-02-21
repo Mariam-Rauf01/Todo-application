@@ -1602,7 +1602,7 @@
     </div>
 
     <script>
-        // WhatsApp-Style Chatbot with proper message ordering
+        // Initialize chatbot - call directly since script is at end of HTML
         function initializeChatbot() {
             const chatTrigger = document.getElementById('chatbot-trigger');
             const chatContainer = document.getElementById('chatbot-container');
@@ -1614,6 +1614,14 @@
             const attachBtn = document.getElementById('attach-btn');
             const emojiBtn = document.getElementById('emoji-btn');
             const scrollToBottomBtn = document.getElementById('scroll-to-bottom-btn');
+
+            // Debug log
+            console.log('Chatbot initializing...', { chatTrigger, chatContainer });
+
+            if (!chatTrigger || !chatContainer) {
+                console.error('Chatbot elements not found!');
+                return;
+            }
 
             let isTyping = false;
             let showScrollButton = false;
@@ -2053,10 +2061,16 @@
             }, 500);
         }
 
-        // Initialize chatbot after DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(initializeChatbot, 500);
-        });
+        // Initialize chatbot immediately - script runs after chatbot HTML
+        // Check if DOM is already loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(initializeChatbot, 100);
+            });
+        } else {
+            // DOM already loaded, initialize immediately
+            setTimeout(initializeChatbot, 100);
+        }
     </script>
 
     <style>
