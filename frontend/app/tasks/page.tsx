@@ -197,8 +197,7 @@ export default function TasksPage() {
           status: 'pending',
           priority: newTask.priority,
           category: newTask.category || null,
-          due_date: newTask.due_date || null,
-          user_id: parseInt(localStorage.getItem('user_id') || '1')
+          due_date: newTask.due_date || null
         })
       });
 

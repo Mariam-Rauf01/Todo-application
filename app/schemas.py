@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, StringConstraints, field_validator
+import BaseModel, EmailStr, Field, StringConstraints, field_validator
 from typing import Annotated, Optional
 from datetime import datetime
 from dateutil import parser as dateutil_parser
@@ -82,16 +82,24 @@ class TaskBase(BaseModel):
         Parse datetime fields from various formats (ISO strings, date strings, etc.)
         This handles both datetime strings and date-only strings from frontend
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         if value is None:
             return None
         if isinstance(value, datetime):
             return value
-        try:
-            # Try to parse using dateutil (handles most formats)
-            return dateutil_parser.parse(value)
-        except (ValueError, TypeError):
-            # If parsing fails, return None
-            return None
+        if isinstance(value, str):
+            try:
+                # Try to parse using dateutil (handles most formats)
+                parsed = dateutil_parser.parse(value)
+                logger.info(f"Successfully parsed datetime: {value} -> {parsed}")
+                return parsed
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Failed to parse datetime '{value}': {e}. Setting to None.")
+                return None
+        # For any other type, return as-is (let Pydantic handle validation)
+        return value
 
 class TaskCreate(TaskBase):
     pass

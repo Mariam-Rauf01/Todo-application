@@ -76,70 +76,77 @@ def create_task(
     """
     Create a new task for the current user
     """
-    db_task = models.Task(
-        title=task.title,
-        description=task.description,
-        status=task.status,
-        user_id=current_user.id,
-        due_date=task.due_date,
-        priority=task.priority,
-        category=task.category,
-        recurrence_pattern=task.recurrence_pattern,
-        recurrence_end_date=task.recurrence_end_date,
-        recurrence_interval=task.recurrence_interval or 1,
-        parent_task_id=task.parent_task_id
-    )
-
-    db.add(db_task)
-    db.commit()
-    db.refresh(db_task)
-
-    # Handle recurrence - if this is a recurring task, calculate the next occurrence
-    if db_task.recurrence_pattern:
-        next_occurrence = calculate_next_occurrence(
-            current_date=db_task.due_date or datetime.utcnow(),
-            pattern=RecurrencePattern(db_task.recurrence_pattern),
-            interval=db_task.recurrence_interval,
-            end_date=db_task.recurrence_end_date
+    logger.info(f"Creating task: title='{task.title}', due_date={task.due_date}, type={type(task.due_date)}")
+    
+    try:
+        db_task = models.Task(
+            title=task.title,
+            description=task.description,
+            status=task.status,
+            user_id=current_user.id,
+            due_date=task.due_date,
+            priority=task.priority,
+            category=task.category,
+            recurrence_pattern=task.recurrence_pattern,
+            recurrence_end_date=task.recurrence_end_date,
+            recurrence_interval=task.recurrence_interval or 1,
+            parent_task_id=task.parent_task_id
         )
 
-        if next_occurrence:
-            db_task.next_occurrence = next_occurrence
-            db.commit()
-            logger.info(f"Set next occurrence for recurring task {db_task.id} to {next_occurrence}")
+        db.add(db_task)
+        db.commit()
+        db.refresh(db_task)
 
-    # Schedule notifications for due date
-    # Temporarily disabled - notifications table not created yet
-    # if db_task.due_date:
-    #     notification_service.schedule_task_due_notifications(db, db_task, current_user.id)
-
-    # Publish task created event to Kafka
-    try:
-        if kafka_service:
-            event = Event(
-                event_type=EventType.TASK_CREATED,
-                user_id=current_user.id,
-                entity_id=db_task.id,
-                entity_data={
-                    "title": db_task.title,
-                    "description": db_task.description,
-                    "status": db_task.status,
-                    "due_date": db_task.due_date.isoformat() if db_task.due_date else None,
-                    "priority": db_task.priority,
-                    "category": db_task.category,
-                    "recurrence_pattern": db_task.recurrence_pattern,
-                    "recurrence_end_date": db_task.recurrence_end_date.isoformat() if db_task.recurrence_end_date else None,
-                    "recurrence_interval": db_task.recurrence_interval,
-                    "parent_task_id": db_task.parent_task_id,
-                    "next_occurrence": db_task.next_occurrence.isoformat() if db_task.next_occurrence else None
-                }
+        # Handle recurrence - if this is a recurring task, calculate the next occurrence
+        if db_task.recurrence_pattern:
+            next_occurrence = calculate_next_occurrence(
+                current_date=db_task.due_date or datetime.utcnow(),
+                pattern=RecurrencePattern(db_task.recurrence_pattern),
+                interval=db_task.recurrence_interval,
+                end_date=db_task.recurrence_end_date
             )
-            kafka_service.send_message("task_events", event.dict())
-            logger.info(f"Published task created event for task ID: {db_task.id}")
-    except Exception as e:
-        logger.error(f"Failed to publish task created event: {e}")
 
-    return db_task
+            if next_occurrence:
+                db_task.next_occurrence = next_occurrence
+                db.commit()
+                logger.info(f"Set next occurrence for recurring task {db_task.id} to {next_occurrence}")
+
+        # Schedule notifications for due date
+        # Temporarily disabled - notifications table not created yet
+        # if db_task.due_date:
+        #     notification_service.schedule_task_due_notifications(db, db_task, current_user.id)
+
+        # Publish task created event to Kafka
+        try:
+            if kafka_service:
+                event = Event(
+                    event_type=EventType.TASK_CREATED,
+                    user_id=current_user.id,
+                    entity_id=db_task.id,
+                    entity_data={
+                        "title": db_task.title,
+                        "description": db_task.description,
+                        "status": db_task.status,
+                        "due_date": db_task.due_date.isoformat() if db_task.due_date else None,
+                        "priority": db_task.priority,
+                        "category": db_task.category,
+                        "recurrence_pattern": db_task.recurrence_pattern,
+                        "recurrence_end_date": db_task.recurrence_end_date.isoformat() if db_task.recurrence_end_date else None,
+                        "recurrence_interval": db_task.recurrence_interval,
+                        "parent_task_id": db_task.parent_task_id,
+                        "next_occurrence": db_task.next_occurrence.isoformat() if db_task.next_occurrence else None
+                    }
+                )
+                kafka_service.send_message("task_events", event.dict())
+                logger.info(f"Published task created event for task ID: {db_task.id}")
+        except Exception as e:
+            logger.error(f"Failed to publish task created event: {e}")
+
+        logger.info(f"Task created successfully: ID={db_task.id}, title='{db_task.title}'")
+        return db_task
+    except Exception as e:
+        logger.error(f"Error creating task: {e}", exc_info=True)
+        raise
 
 @router.get("/{task_id}", response_model=schemas.Task)
 def get_task(
