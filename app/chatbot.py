@@ -1187,8 +1187,23 @@ Would you like me to create a task with a due date instead? 😊"""
             from datetime import datetime
             created_date = current_user.created_at.strftime('%Y-%m-%d %H:%M') if current_user.created_at else 'N/A'
             is_active = "✅ Active" if current_user.is_active else "❌ Inactive"
+            
+            # Check if user is using Roman Urdu
+            message_lower = chat_request.message.lower()
+            is_roman_urdu = any(word in message_lower for word in ['kon', 'mera', 'mere', 'kiya', 'huva', 'kaun', 'main', 'mein'])
+            
+            if is_roman_urdu:
+                response_text = f"""👤 AAPKA PROFILE:
 
-            response_text = f"""👤 YOUR PROFILE INFO:
+📧 Email: {current_user.email}
+👨‍💼 Naam: {current_user.full_name}
+🆔 User ID: {current_user.id}
+📊 Status: {is_active}
+📅 Join Date: {created_date}
+
+Aapko full access hai! 😄 Koi aur madad chahiye to batayein!"""
+            else:
+                response_text = f"""👤 YOUR PROFILE INFO:
 
 📧 Email: {current_user.email}
 👨‍💼 Name: {current_user.full_name}

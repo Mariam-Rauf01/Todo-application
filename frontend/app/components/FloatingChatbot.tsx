@@ -585,19 +585,19 @@ export default function FloatingChatbot() {
               </div>
             </div>
 
-            {/* Quick Commands */}
+            {/* Quick Commands - Task Actions */}
             <div className="bg-purple-50 px-2 py-2 border-b border-purple-100">
               <div className="flex flex-wrap gap-1">
-                <button onClick={() => setInputText('who am i')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">👤 Profile</button>
-                <button onClick={() => setInputText('create task: ')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">+ Add</button>
-                <button onClick={() => setInputText('update: -> ')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">~ Edit</button>
-                <button onClick={() => setInputText('delete task: ')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">- Delete</button>
-                <button onClick={() => setInputText('complete task: ')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">✓ Done</button>
-                <button onClick={() => setInputText('show my tasks')} className="px-2 py-1 bg-white rounded text-xs hover:bg-purple-100">📋 List</button>
+                <button onClick={() => setInputText('who am i')} className="px-2 py-1 bg-pink-100 rounded text-xs hover:bg-pink-200">👤 Profile</button>
+                <button onClick={() => setInputText('add task: ')} className="px-2 py-1 bg-green-100 rounded text-xs hover:bg-green-200">➕ Add Task</button>
+                <button onClick={() => setInputText('delete task: ')} className="px-2 py-1 bg-red-100 rounded text-xs hover:bg-red-200">🗑️ Delete</button>
+                <button onClick={() => setInputText('update task: ')} className="px-2 py-1 bg-yellow-100 rounded text-xs hover:bg-yellow-200">✏️ Edit</button>
+                <button onClick={() => setInputText('complete task: ')} className="px-2 py-1 bg-blue-100 rounded text-xs hover:bg-blue-200">✅ Complete</button>
+                <button onClick={() => setInputText('show my tasks')} className="px-2 py-1 bg-purple-100 rounded text-xs hover:bg-purple-200">📋 My Tasks</button>
               </div>
             </div>
 
-            {/* Messages Area - user at top, bot at bottom like WhatsApp */}
+            {/* Messages Area */}
             <div className="h-72 overflow-y-auto p-3 space-y-2 bg-gradient-to-b from-purple-50 to-blue-50">
               {messages.map((message, idx) => (
                 <div
@@ -606,7 +606,25 @@ export default function FloatingChatbot() {
                   style={{ animationDelay: `${idx * 0.05}s` }}
                 >
                   <div className={`max-w-[90%] px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${message.sender === 'user' ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none shadow-sm'}`}>
-                    {message.text}
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="flex-1">{message.text}</span>
+                      {message.sender === 'user' && (
+                        <button
+                          onClick={() => {
+                            if (confirm('Delete this message?')) {
+                              setMessages(prev => prev.filter(m => m.id !== message.id));
+                            }
+                          }}
+                          className="text-xs opacity-50 hover:opacity-100"
+                          title="Delete"
+                        >
+                          🗑️
+                        </button>
+                      )}
+                    </div>
+                    <div className="text-xs opacity-70 mt-1">
+                      {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
                   </div>
                 </div>
               ))}
