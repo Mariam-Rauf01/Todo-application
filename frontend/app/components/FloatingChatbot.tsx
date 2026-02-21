@@ -150,12 +150,8 @@ export default function FloatingChatbot() {
         console.log('Raw DB messages:', dbMessages);
 
         if (dbMessages && dbMessages.length > 0) {
-          // Sort by date in ascending order (oldest first)
-          const sortedMessages = dbMessages.sort((a: any, b: any) => 
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
-          
-          const formattedMessages: Message[] = sortedMessages.map((m: any) => ({
+          // Backend returns in ascending order (oldest first) - display as is
+          const formattedMessages: Message[] = dbMessages.map((m: any) => ({
             id: m.id.toString(),
             text: m.message,  // For both user and bot, message is in 'message' field
             sender: m.sender === 'user' ? 'user' : 'bot',
@@ -164,14 +160,14 @@ export default function FloatingChatbot() {
 
           console.log('Formatted messages:', formattedMessages.length);
           console.log('First few messages:', formattedMessages.slice(0, 3));
-          
+
           setMessages(formattedMessages);
           // Also save to localStorage
           localStorage.setItem(getChatStorageKey(), JSON.stringify(formattedMessages));
-          
+
           // Scroll to bottom after loading
           setTimeout(() => scrollToBottom(), 100);
-          
+
           return true; // Return true if messages loaded
         } else {
           console.log('No messages in database');
