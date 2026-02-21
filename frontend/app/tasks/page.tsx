@@ -185,6 +185,9 @@ export default function TasksPage() {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
       const token = localStorage.getItem('access_token');
 
+      // Convert date string to ISO datetime format (YYYY-MM-DD -> YYYY-MM-DDT00:00:00)
+      const dueDateValue = newTask.due_date ? `${newTask.due_date}T00:00:00` : null;
+
       const res = await fetch(`${backendUrl}/api/tasks/`, {
         method: 'POST',
         headers: {
@@ -197,7 +200,7 @@ export default function TasksPage() {
           status: 'pending',
           priority: newTask.priority,
           category: newTask.category || null,
-          due_date: newTask.due_date || null
+          due_date: dueDateValue
         })
       });
 
