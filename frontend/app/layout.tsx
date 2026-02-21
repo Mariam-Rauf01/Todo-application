@@ -2,7 +2,6 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Providers from './components/Providers';
-import ChatBotWrapper from './components/ChatBotWrapper';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -20,7 +19,6 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
-          <ChatBotWrapper />
           <div className="min-h-screen bg-gray-50">
             <main>
               {children}

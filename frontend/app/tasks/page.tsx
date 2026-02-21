@@ -96,7 +96,7 @@ export default function TasksPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Always fetch fresh tasks when page loads
+    // Always fetch fresh tasks when page loads or navigates to
     fetchTasks();
     setIsLoaded(true);
 
@@ -104,24 +104,32 @@ export default function TasksPage() {
       console.log('🔄 Refreshing tasks from event...');
       fetchTasks();
     };
-    
+
     // Listen for refresh-tasks event from chatbot
     window.addEventListener('refresh-tasks', handleRefresh);
-    
+
+    // Listen for navigation focus - refetch when user navigates back to this page
+    const handleFocus = () => {
+      console.log('📄 Page focused, refreshing tasks...');
+      fetchTasks();
+    };
+    window.addEventListener('focus', handleFocus);
+
     // Check for chatbot trigger on mount (if user navigated from chatbot)
     const lastTrigger = localStorage.getItem('tasks-refresh-trigger');
     if (lastTrigger) {
       const triggerTime = parseInt(lastTrigger);
       const now = Date.now();
-      // If trigger was in last 30 seconds, refresh immediately
-      if (now - triggerTime < 30000) {
+      // If trigger was in last 60 seconds, refresh immediately
+      if (now - triggerTime < 60000) {
         console.log('🔄 Recent chatbot action detected, refreshing...');
         setTimeout(() => fetchTasks(), 50);
       }
     }
-    
+
     return () => {
       window.removeEventListener('refresh-tasks', handleRefresh);
+      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 
@@ -949,31 +957,59 @@ export default function TasksPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2 sm:flex-col sm:gap-2">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => {
-                                  setEditingTask(task);
-                                  setEditForm({
-                                    title: task.title,
-                                    description: task.description || '',
-                                    priority: task.priority || 'medium',
-                                    category: task.category || '',
-                                    due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : ''
-                                  });
-                                }}
-                                className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
-                                title="Edit"
-                              >
-                                <span>✏️</span>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTask(task.id)}
-                                className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
-                                title="Delete"
-                              >
-                                <span>🗑️</span>
-                              </button>
-                            </div>
+                              {/* Quick Actions Toolbar */}
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleUpdateTask(task.id, { priority: task.priority === 'high' ? 'medium' : task.priority === 'medium' ? 'low' : 'high' })}
+                                  className="p-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                                  title="Cycle Priority"
+                                >
+                                  <span>🔥</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const newDate = prompt('Enter new due date (YYYY-MM-DD):', task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '');
+                                    if (newDate) handleUpdateTask(task.id, { due_date: newDate });
+                                  }}
+                                  className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                                  title="Update Due Date"
+                                >
+                                  <span>📅</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const newCat = prompt('Enter category:', task.category || '');
+                                    if (newCat !== null) handleUpdateTask(task.id, { category: newCat || null });
+                                  }}
+                                  className="p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                                  title="Update Category"
+                                >
+                                  <span>📁</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingTask(task);
+                                    setEditForm({
+                                      title: task.title,
+                                      description: task.description || '',
+                                      priority: task.priority || 'medium',
+                                      category: task.category || '',
+                                      due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : ''
+                                    });
+                                  }}
+                                  className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                                  title="Edit"
+                                >
+                                  <span>✏️</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTask(task.id)}
+                                  className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                                  title="Delete"
+                                >
+                                  <span>🗑️</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
