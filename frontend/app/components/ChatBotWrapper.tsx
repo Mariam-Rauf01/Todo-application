@@ -9,29 +9,25 @@ export default function ChatBotWrapper() {
 
   useEffect(() => {
     setMounted(true);
-    const checkLogin = () => {
-      const userId = localStorage.getItem('user_id');
-      setIsLoggedIn(!!userId);
-    };
     
-    checkLogin();
-    
+    // Check login status on mount
+    const userId = localStorage.getItem('user_id');
+    setIsLoggedIn(!!userId);
+
+    // Listen for login/logout events
     const handleLogin = () => setIsLoggedIn(true);
     const handleLogout = () => setIsLoggedIn(false);
-    
+
     window.addEventListener('login', handleLogin);
     window.addEventListener('logout', handleLogout);
-    
-    const interval = setInterval(checkLogin, 1000);
-    
+
     return () => {
       window.removeEventListener('login', handleLogin);
       window.removeEventListener('logout', handleLogout);
-      clearInterval(interval);
     };
   }, []);
 
   if (!mounted) return null;
-  
+
   return isLoggedIn ? <FloatingChatbot /> : null;
 }
