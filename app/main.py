@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 import os
 from dotenv import load_dotenv
 
@@ -56,8 +57,17 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(chatbot.router, prefix="/api/chatbot", tags=["chatbot"])
 
+# Serve static files (frontend HTML)
+static_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+if os.path.exists(static_path):
+    app.mount("/static", StaticFiles(directory=static_path), name="static")
+
 @app.get("/")
 def read_root():
+    """Serve the frontend HTML file"""
+    index_path = os.path.join(static_path, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
     return {"message": "Welcome to the AI-Powered Todo Web Application"}
 
 @app.get("/health")

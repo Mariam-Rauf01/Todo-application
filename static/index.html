@@ -1,0 +1,2509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Task Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .app-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-section {
+            padding: 15px;
+            background: linear-gradient(to bottom, #f8fafc, #ffffff);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+        }
+
+        .form-header {
+            margin-bottom: 10px;
+        }
+
+        .form-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.95rem;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #ffffff;
+            color: #1e293b;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+            transform: translateY(-2px);
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: #94a3b8;
+        }
+
+        /* Form transition effects */
+        .auth-form form {
+            transition: all 0.4s ease;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Ensure both login and signup forms have identical styling */
+        #loginForm .form-group,
+        #signupForm .form-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        #loginForm label,
+        #signupForm label {
+            display: block;
+            text-align: left;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #loginForm input,
+        #signupForm input {
+            width: 100%;
+            padding: 10px 16px 10px 44px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #ffffff;
+            color: #1e293b;
+        }
+
+        #loginForm input:focus,
+        #signupForm input:focus {
+            outline: none;
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+        }
+
+        /* Input field icons for both forms */
+        #loginForm .form-group i,
+        #signupForm .form-group i {
+            position: absolute;
+            left: 16px;
+            top: 40px;
+            color: #94a3b8;
+            z-index: 1;
+        }
+
+        #loginForm input[type="text"],
+        #loginForm input[type="email"],
+        #loginForm input[type="password"],
+        #signupForm input[type="text"],
+        #signupForm input[type="email"],
+        #signupForm input[type="password"] {
+            padding-left: 46px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3), 0 2px 4px -1px rgba(99, 102, 241, 0.1);
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4), 0 4px 6px -2px rgba(99, 102, 241, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .tasks-section {
+            padding: 30px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .task-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: #f1f5f9;
+            color: #64748b;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+        }
+
+        .task-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border-left: 5px solid #c7d2fe;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .task-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+        }
+
+        .task-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-left-width: 5px;
+        }
+
+        .task-card.pending {
+            border-left-color: #fde68a;
+        }
+
+        .task-card.pending:hover {
+            border-left-color: #f59e0b;
+        }
+
+        .task-card.in-progress {
+            border-left-color: #bfdbfe;
+        }
+
+        .task-card.in-progress:hover {
+            border-left-color: #3b82f6;
+        }
+
+        .task-card.completed {
+            border-left-color: #d1fadf;
+        }
+
+        .task-card.completed:hover {
+            border-left-color: #22c55e;
+        }
+
+        .task-card.completed .task-title {
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+
+        .task-card.completed .task-description {
+            color: #cbd5e1;
+        }
+        
+        .task-checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+        
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            accent-color: #4ade80;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        .task-checkbox:checked {
+            background-color: #4ade80;
+            border-color: #4ade80;
+        }
+        
+        .completed-task {
+            text-decoration: line-through;
+            color: #94a3b8 !important;
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            gap: 15px;
+        }
+
+        .task-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .task-status {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-in-progress {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .status-completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .task-description {
+            color: #475569;
+            margin: 12px 0;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-bottom: 18px;
+            padding-top: 15px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .action-btn {
+            padding: 10px 18px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .update-btn {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .update-btn:hover {
+            background: #bae6fd;
+        }
+
+        .delete-btn {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .delete-btn:hover {
+            background: #fecaca;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #64748b;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            color: #94a3b8;
+        }
+
+        /* Authentication Styles */
+        .auth-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .auth-form {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        .auth-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+
+        .auth-header p {
+            color: #64748b;
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+
+        .auth-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .auth-form label {
+            display: block;
+            text-align: left;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.95rem;
+        }
+
+        .auth-form input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #ffffff;
+            color: #1e293b;
+        }
+
+        .auth-form input:focus {
+            outline: none;
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+        }
+
+        .auth-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 16px 28px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .auth-btn:hover {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4), 0 4px 6px -2px rgba(99, 102, 241, 0.2);
+        }
+
+        .auth-switch {
+            margin-top: 20px;
+        }
+
+        .auth-switch a {
+            color: #6366f1;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        /* Enhanced form styling for better UX */
+        .auth-form .form-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .auth-form label {
+            display: block;
+            text-align: left;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .auth-form input {
+            width: 100%;
+            padding: 14px 16px 14px 44px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #ffffff;
+            color: #1e293b;
+        }
+
+        .auth-form input:focus {
+            outline: none;
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+        }
+
+        /* Input field icons */
+        .auth-form .form-group {
+            position: relative;
+        }
+
+        .auth-form .form-group i {
+            position: absolute;
+            left: 16px;
+            top: 42px;
+            color: #94a3b8;
+            z-index: 1;
+        }
+
+        .auth-form input[type="text"],
+        .auth-form input[type="email"],
+        .auth-form input[type="password"] {
+            padding-left: 46px;
+        }
+
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        #welcomeUser {
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .logout-btn {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background: #fecaca;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .task-filters {
+                justify-content: center;
+            }
+
+            .task-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .task-actions {
+                flex-wrap: wrap;
+            }
+
+            .action-btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .auth-form {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container" id="authContainer">
+        <div class="auth-form" id="authForm">
+            <div class="auth-header">
+                <h2 id="authTitle">Welcome Back! 👋</h2>
+                <p id="authSubtitle">Please sign in to your account</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="email" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="auth-btn" id="authSubmitBtn">Sign In</button>
+            </form>
+            
+            <!-- Sign Up Form (initially hidden) -->
+            <form id="signupForm" style="display: none;">
+                <div class="form-group">
+                    <label for="signupName"><i class="fas fa-user"></i> Full Name</label>
+                    <input type="text" id="signupName" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="signupEmail" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="signupPassword" placeholder="Create a password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword"><i class="fas fa-lock"></i> Confirm Password</label>
+                    <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+                </div>
+                <button type="submit" class="auth-btn" id="signupSubmitBtn">Sign Up</button>
+            </form>
+            
+            <div class="auth-switch" id="authSwitch">
+                <p>Don't have an account? <a href="#" id="switchToSignup">Sign Up</a></p>
+            </div>
+            <div class="auth-switch" id="backToLogin" style="display: none;">
+                <p>Already have an account? <a href="#" id="switchToLogin">Sign In</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container" id="appContainer" style="display: none;">
+        <header>
+            <h1>✨ Advanced Task Manager</h1>
+            <p class="subtitle">Organize your tasks efficiently with AI-powered insights</p>
+            <div class="user-info">
+                <span id="welcomeUser">Welcome!</span>
+                <button id="logoutBtn" class="logout-btn">Logout</button>
+            </div>
+        </header>
+
+        <div class="app-container">
+            <section class="form-section">
+                <div class="form-header">
+                    <h2><i class="fas fa-plus-circle"></i> Add New Task</h2>
+                </div>
+                <div class="form-group">
+                    <label for="taskTitle"><i class="fas fa-heading"></i> Task Title *</label>
+                    <input type="text" id="taskTitle" placeholder="What needs to be done?" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskDesc"><i class="fas fa-align-left"></i> Description</label>
+                    <textarea id="taskDesc" placeholder="Add details about the task..." rows="2"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskCategory"><i class="fas fa-tag"></i> Category</label>
+                    <select id="taskCategory">
+                        <option value="personal">👤 Personal</option>
+                        <option value="work">💼 Work</option>
+                        <option value="shopping">🛒 Shopping</option>
+                        <option value="health">💪 Health</option>
+                        <option value="education">🎓 Education</option>
+                        <option value="other">📦 Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskStatus"><i class="fas fa-tasks"></i> Status</label>
+                    <select id="taskStatus">
+                        <option value="pending">⏳ Pending</option>
+                        <option value="in-progress">🔄 In Progress</option>
+                        <option value="completed">✅ Completed</option>
+                    </select>
+                </div>
+
+                <button id="addTaskBtn"><i class="fas fa-plus"></i> Add Task</button>
+            </section>
+
+            <section class="tasks-section">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-tasks"></i> Your Tasks</h2>
+                    <div class="task-filters">
+                        <button class="filter-btn active" data-filter="all"><i class="fas fa-globe-americas"></i> All</button>
+                        <button class="filter-btn" data-filter="pending"><i class="fas fa-clock"></i> Pending</button>
+                        <button class="filter-btn" data-filter="in-progress"><i class="fas fa-sync-alt"></i> In Progress</button>
+                        <button class="filter-btn" data-filter="completed"><i class="fas fa-check-circle"></i> Completed</button>
+                    </div>
+                </div>
+
+                <div id="taskList">
+                    <!-- Tasks will be loaded here -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // Task management system - Updated to use API calls
+        let tasks = []; // Will be populated from API
+        let currentFilter = 'all';
+        const API_BASE_URL = 'https://mariam-rauf01-taskmate-todo-app.hf.space/api'; // Backend API URL
+
+        // DOM Elements
+        const taskTitleInput = document.getElementById('taskTitle');
+        const taskDescInput = document.getElementById('taskDesc');
+        const taskStatusSelect = document.getElementById('taskStatus');
+        const taskCategorySelect = document.getElementById('taskCategory');
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        const taskList = document.getElementById('taskList');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+
+        // Initialize the app
+        async function initApp() {
+            setupTaskEventListeners(); // Set up event delegation for task actions
+            setupEventListeners();
+            resetForm(); // Ensure form is in initial state
+            
+            // Load tasks if user is authenticated
+            if (currentUser) {
+                await loadTasks();
+            }
+        }
+
+        // Migrate existing tasks to include category field
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Use the stored reference to addTaskBtn
+            addTaskBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (addTaskBtn.hasAttribute('data-task-id')) {
+                    // If the button has a task ID, it means we're updating
+                    const taskId = parseInt(addTaskBtn.getAttribute('data-task-id'));
+                    updateExistingTask(taskId);
+                } else {
+                    // Otherwise, we're adding a new task
+                    addNewTask();
+                }
+            });
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', async () => {
+                    // Update active button
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    // Update filter and reload tasks
+                    currentFilter = button.dataset.filter;
+                    await loadTasks();
+                });
+            });
+        }
+
+        // Add a new task
+        async function addNewTask() {
+            if (!currentUser) {
+                alert('Please log in to add tasks.');
+                return;
+            }
+
+            const title = taskTitleInput.value.trim();
+            const description = taskDescInput.value.trim();
+            const status = taskStatusSelect.value;
+            const category = taskCategorySelect.value;
+
+            if (!title) {
+                alert('Please enter a task title');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        description: description || null,
+                        status: status,
+                        category: category
+                    })
+                });
+
+                if (response.ok) {
+                    const newTask = await response.json();
+                    // Add to local tasks array and refresh UI
+                    tasks.push(newTask);
+                    loadTasks();
+
+                    // Clear form
+                    taskTitleInput.value = '';
+                    taskDescInput.value = '';
+                    taskStatusSelect.value = 'pending';
+                    taskCategorySelect.value = 'personal';
+                    taskTitleInput.focus();
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.detail || 'Failed to add task. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error adding task:', error);
+                alert('Failed to add task. Please try again.');
+            }
+        }
+
+        // Update a task - opens edit modal/form
+        function updateTask(id) {
+            console.log('Updating task with ID:', id);
+            if (!currentUser) {
+                alert('Please log in to update tasks.');
+                return;
+            }
+
+            const task = tasks.find(t => t.id === id);
+            if (!task) {
+                alert('Task not found! Either the task does not exist or you do not have permission to update it.');
+                return;
+            }
+
+            // Fill the form with current task data
+            taskTitleInput.value = task.title;
+            taskDescInput.value = task.description || '';
+            taskStatusSelect.value = task.status;
+            taskCategorySelect.value = task.category || 'personal'; // Default to personal if no category
+
+            // Change button to update mode
+            addTaskBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Update Task';
+            // Store the task ID being edited
+            addTaskBtn.setAttribute('data-task-id', id);
+            
+            // Temporarily change the button's click handler to update function
+            addTaskBtn.onclick = function() {
+                const taskId = parseInt(addTaskBtn.getAttribute('data-task-id'));
+                updateExistingTask(taskId);
+            };
+        }
+
+        // Actually update the existing task
+        async function updateExistingTask(id) {
+            console.log('Updating existing task with ID:', id);
+            if (!currentUser) {
+                alert('Please log in to update tasks.');
+                return;
+            }
+
+            const title = taskTitleInput.value.trim();
+            const description = taskDescInput.value.trim();
+            const status = taskStatusSelect.value;
+            const category = taskCategorySelect.value;
+
+            if (!title) {
+                alert('Please enter a task title');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        description: description || null,
+                        status: status,
+                        category: category
+                    })
+                });
+
+                if (response.ok) {
+                    const updatedTask = await response.json();
+
+                    // Update the task in the local array
+                    const taskIndex = tasks.findIndex(t => t.id === id);
+                    if (taskIndex !== -1) {
+                        tasks[taskIndex] = updatedTask;
+                    } else {
+                        // If not found locally, add it
+                        tasks.push(updatedTask);
+                    }
+
+                    loadTasks();
+                    // Reset form to add mode
+                    resetForm();
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.detail || 'Failed to update task. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error updating task:', error);
+                alert('Failed to update task. Please try again.');
+            }
+        }
+
+        // Reset form to add mode
+        function resetForm() {
+            taskTitleInput.value = '';
+            taskDescInput.value = '';
+            taskStatusSelect.value = 'pending';
+            taskCategorySelect.value = 'personal'; // Reset to default category
+            addTaskBtn.innerHTML = '<i class="fas fa-plus"></i> Add Task';
+
+            // Remove the task ID attribute and restore original functionality
+            addTaskBtn.removeAttribute('data-task-id');
+            taskTitleInput.focus();
+        }
+
+        // Delete a task
+        async function deleteTask(id) {
+            console.log('Deleting task with ID:', id);
+            if (!currentUser) {
+                alert('Please log in to delete tasks.');
+                return;
+            }
+
+            if (confirm('Are you sure you want to delete this task?')) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        // Remove from local tasks array and refresh UI
+                        tasks = tasks.filter(task => task.id !== id);
+                        loadTasks();
+                    } else {
+                        const errorData = await response.json();
+                        alert(errorData.detail || 'Failed to delete task. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Error deleting task:', error);
+                    alert('Failed to delete task. Please try again.');
+                }
+            }
+        }
+
+        // Save tasks is handled by the API now
+        function saveTasks() {
+            // No longer needed as tasks are saved via API calls
+        }
+
+        // Load tasks based on current filter
+        async function loadTasks() {
+            if (!currentUser) {
+                taskList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔒</div>
+                        <h3>Please Log In</h3>
+                        <p>You need to be logged in to view your tasks</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                // Fetch tasks from API
+                const response = await fetch(`${API_BASE_URL}/tasks/?status=${currentFilter}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    tasks = await response.json();
+
+                    // Apply status filter if not 'all'
+                    let filteredTasks = tasks;
+                    if (currentFilter !== 'all') {
+                        filteredTasks = tasks.filter(task => task.status === currentFilter);
+                    }
+
+                    // Sort by creation date (newest first)
+                    filteredTasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                    // Render tasks
+                    if (filteredTasks.length === 0) {
+                        taskList.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📋</div>
+                                <h3>No tasks found</h3>
+                                <p>${currentFilter === 'all' ? 'Add your first task to get started!' : `No ${currentFilter} tasks`}</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    taskList.innerHTML = filteredTasks.map(task => `
+                        <div class="task-card ${task.status}" data-task-id="${task.id}">
+                            <div class="task-header">
+                                <div class="task-checkbox-container">
+                                    <input type="checkbox" class="task-checkbox" ${task.status === 'completed' ? 'checked' : ''} data-task-id="${task.id}">
+                                    <h3 class="task-title ${task.status === 'completed' ? 'completed-task' : ''}">${task.title}</h3>
+                                </div>
+                                <span class="task-status status-${task.status}">${getStatusIcon(task.status)} ${getStatusText(task.status)}</span>
+                            </div>
+                            ${task.description ? `<p class="task-description ${task.status === 'completed' ? 'completed-task' : ''}">${task.description}</p>` : ''}
+                            <div class="task-meta">
+                                <span><i class="fas fa-tag"></i> ${getCategoryIcon(task.category)} ${getCategoryText(task.category)}</span>
+                                <span><i class="fas fa-calendar"></i> Created: ${new Date(task.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <div class="task-actions">
+                                <button class="action-btn update-btn update-task-btn"><i class="fas fa-edit"></i> Edit</button>
+                                <button class="action-btn delete-btn delete-task-btn"><i class="fas fa-trash"></i> Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    const errorData = await response.json();
+                    taskList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⚠️</div>
+                            <h3>Error Loading Tasks</h3>
+                            <p>${errorData.detail || 'Failed to load tasks. Please try again.'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                taskList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <h3>Error Loading Tasks</h3>
+                        <p>Unable to connect to the server. Please check your connection and try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Event delegation setup for task actions
+        function setupTaskEventListeners() {
+            // Use event delegation on the taskList container
+            taskList.addEventListener('click', function(e) {
+                // Handle update button clicks
+                const updateBtn = e.target.closest('.update-task-btn');
+                if (updateBtn) {
+                    e.stopPropagation();
+                    const taskId = parseInt(updateBtn.closest('.task-card').getAttribute('data-task-id'));
+                    updateTask(taskId);
+                }
+                
+                // Handle delete button clicks
+                const deleteBtn = e.target.closest('.delete-task-btn');
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    const taskId = parseInt(deleteBtn.closest('.task-card').getAttribute('data-task-id'));
+                    deleteTask(taskId);
+                }
+            });
+            
+            // Handle task checkbox changes
+            taskList.addEventListener('change', function(e) {
+                if (e.target.classList.contains('task-checkbox')) {
+                    const taskId = parseInt(e.target.getAttribute('data-task-id'));
+                    const isChecked = e.target.checked;
+
+                    // Update task status via API
+                    updateTaskStatus(taskId, isChecked ? 'completed' : 'pending');
+                }
+            });
+        }
+
+        // Function to update task status via API
+        async function updateTaskStatus(taskId, newStatus) {
+            if (!currentUser) {
+                alert('Please log in to update tasks.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        status: newStatus
+                    })
+                });
+
+                if (response.ok) {
+                    loadTasks(); // Reload tasks to reflect changes
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.detail || 'Failed to update task status. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error updating task status:', error);
+                alert('Failed to update task status. Please try again.');
+            }
+        }
+        // Helper function to get status icon
+        function getStatusIcon(status) {
+            switch(status) {
+                case 'pending': return '⏳';
+                case 'in-progress': return '🔄';
+                case 'completed': return '✅';
+                default: return '';
+            }
+        }
+
+        // Helper function to get status text
+        function getStatusText(status) {
+            switch(status) {
+                case 'pending': return 'Pending';
+                case 'in-progress': return 'In Progress';
+                case 'completed': return 'Completed';
+                default: return status;
+            }
+        }
+
+        // Helper function to get category icon
+        function getCategoryIcon(category) {
+            switch(category) {
+                case 'personal': return '👤';
+                case 'work': return '💼';
+                case 'shopping': return '🛒';
+                case 'health': return '💪';
+                case 'education': return '🎓';
+                case 'other': return '📦';
+                default: return '📌';
+            }
+        }
+
+        // Helper function to get category text
+        function getCategoryText(category) {
+            switch(category) {
+                case 'personal': return 'Personal';
+                case 'work': return 'Work';
+                case 'shopping': return 'Shopping';
+                case 'health': return 'Health';
+                case 'education': return 'Education';
+                case 'other': return 'Other';
+                default: return category;
+            }
+
+        // Authentication System - Updated to use API calls
+        let currentUser = null;
+        let authToken = localStorage.getItem('authToken') || null;
+
+        // DOM Elements for auth
+        const authContainer = document.getElementById('authContainer');
+        const appContainer = document.getElementById('appContainer');
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const signupNameInput = document.getElementById('signupName');
+        const signupEmailInput = document.getElementById('signupEmail');
+        const signupPasswordInput = document.getElementById('signupPassword');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const authTitle = document.getElementById('authTitle');
+        const authSubtitle = document.getElementById('authSubtitle');
+        const authSubmitBtn = document.getElementById('authSubmitBtn');
+        const signupSubmitBtn = document.getElementById('signupSubmitBtn');
+        const authSwitch = document.getElementById('authSwitch');
+        const backToLogin = document.getElementById('backToLogin');
+        const switchToSignup = document.getElementById('switchToSignup');
+        const switchToLogin = document.getElementById('switchToLogin');
+        const welcomeUser = document.getElementById('welcomeUser');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Switch to signup form
+        switchToSignup.addEventListener('click', (e) => {
+            e.preventDefault();
+            authTitle.textContent = 'Create Account! 🎉';
+            authSubtitle.textContent = 'Join us by creating an account';
+            loginForm.style.display = 'none';
+            signupForm.style.display = 'block';
+            authSwitch.style.display = 'none';
+            backToLogin.style.display = 'block';
+            signupForm.onsubmit = handleSignup;
+        });
+
+        // Switch to login form
+        switchToLogin.addEventListener('click', (e) => {
+            e.preventDefault();
+            authTitle.textContent = 'Welcome Back! 👋';
+            authSubtitle.textContent = 'Please sign in to your account';
+            signupForm.style.display = 'none';
+            loginForm.style.display = 'block';
+            authSwitch.style.display = 'block';
+            backToLogin.style.display = 'none';
+            loginForm.onsubmit = handleLogin;
+        });
+
+        // Handle login
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        username: email,
+                        password: password
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    authToken = data.access_token;
+                    localStorage.setItem('authToken', authToken);
+                    
+                    // Get user info after successful login
+                    const userResponse = await fetch(`${API_BASE_URL}/auth/me`, {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+                    
+                    if (userResponse.ok) {
+                        currentUser = await userResponse.json();
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        showApp();
+                        welcomeUser.textContent = `Welcome, ${currentUser.full_name || currentUser.email}!`;
+                        
+                        // Load tasks after successful login
+                        loadTasks();
+                    } else {
+                        throw new Error('Failed to fetch user info');
+                    }
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.detail || 'Invalid email or password. Please try again.');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed. Please check your credentials and try again.');
+            }
+        }
+
+        // Handle signup
+        async function handleSignup(e) {
+            e.preventDefault();
+            const name = signupNameInput.value.trim();
+            const email = signupEmailInput.value.trim();
+            const password = signupPasswordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            // Basic validation
+            if (name.length < 2) {
+                alert('Name must be at least 2 characters long.');
+                return;
+            }
+
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters long.');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                alert('Passwords do not match. Please try again.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        full_name: name,
+                        password: password
+                    })
+                });
+
+                // Check if response is JSON before parsing
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Server returned non-JSON response:', text.substring(0, 500));
+                    throw new Error('Server error: ' + (response.status === 500 ? 'Internal Server Error' : 'Unexpected response'));
+                }
+
+                if (response.ok) {
+                    // Auto-login after successful signup
+                    const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
+                            username: email,
+                            password: password
+                        })
+                    });
+
+                    if (loginResponse.ok) {
+                        const data = await loginResponse.json();
+                        authToken = data.access_token;
+                        localStorage.setItem('authToken', authToken);
+
+                        // Get user info after successful login
+                        const userResponse = await fetch(`${API_BASE_URL}/auth/me`, {
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`
+                            }
+                        });
+
+                        if (userResponse.ok) {
+                            currentUser = await userResponse.json();
+                            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                            showApp();
+                            welcomeUser.textContent = `Welcome, ${currentUser.full_name || currentUser.email}!`;
+
+                            // Load tasks after successful signup/login
+                            loadTasks();
+                        } else {
+                            throw new Error('Failed to fetch user info');
+                        }
+                    } else {
+                        throw new Error('Login after signup failed');
+                    }
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.detail || 'Signup failed. Please try again.');
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    alert('Cannot connect to server. Please ensure the backend is running on http://localhost:8000');
+                } else if (error.message.includes('Server error')) {
+                    alert('Server error occurred. Please check the server logs and try again.');
+                } else {
+                    alert('Signup failed. Please check your information and try again.');
+                }
+            }
+        }
+
+        // Show app after authentication
+        function showApp() {
+            authContainer.style.display = 'none';
+            appContainer.style.display = 'block';
+        }
+
+        // Logout function
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                currentUser = null;
+                authToken = null;
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('authToken');
+                
+                // Clear tasks array
+                tasks = [];
+                
+                authContainer.style.display = 'flex';
+                appContainer.style.display = 'none';
+
+                // Reset login form
+                emailInput.value = '';
+                passwordInput.value = '';
+
+                // Reset signup form
+                signupNameInput.value = '';
+                signupEmailInput.value = '';
+                signupPasswordInput.value = '';
+                confirmPasswordInput.value = '';
+
+                // Reset to login form
+                authTitle.textContent = 'Welcome Back! 👋';
+                authSubtitle.textContent = 'Please sign in to your account';
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
+                authSwitch.style.display = 'block';
+                backToLogin.style.display = 'none';
+                loginForm.onsubmit = handleLogin;
+            }
+        }
+
+        // Check if user is already logged in
+        async function checkAuthStatus() {
+            const savedToken = localStorage.getItem('authToken');
+            if (savedToken) {
+                authToken = savedToken;
+                
+                // Verify token and get user info
+                try {
+                    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        currentUser = await response.json();
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        showApp();
+                        welcomeUser.textContent = `Welcome, ${currentUser.full_name || currentUser.email}!`;
+                        
+                        // Load tasks after verifying user
+                        loadTasks();
+                    } else {
+                        // Token is invalid, clear it and show login
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('currentUser');
+                        showLoginForm();
+                    }
+                } catch (error) {
+                    console.error('Auth verification error:', error);
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentUser');
+                    showLoginForm();
+                }
+            } else {
+                showLoginForm();
+            }
+        }
+
+        function showLoginForm() {
+            authContainer.style.display = 'flex';
+            appContainer.style.display = 'none';
+
+            // Ensure we start with login form
+            loginForm.style.display = 'block';
+            signupForm.style.display = 'none';
+            authSwitch.style.display = 'block';
+            backToLogin.style.display = 'none';
+            loginForm.onsubmit = handleLogin;
+        }
+
+        // Set up initial form handlers
+        loginForm.onsubmit = handleLogin;
+        signupForm.onsubmit = handleSignup;
+        logoutBtn.addEventListener('click', handleLogout);
+
+        // Initialize the app when the page loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            await checkAuthStatus();
+            await initApp();
+        });
+        
+    </script>
+
+    <!-- Enhanced Chatbot -->
+    <!-- WhatsApp-Style Chatbot -->
+    <div id="simple-chatbot">
+        <div id="chatbot-trigger">
+            <span>💬</span>
+        </div>
+        <div id="chatbot-container">
+            <div id="chatbot-header">
+                <div class="chatbot-header-content">
+                    <div class="bot-profile-pic">🤖</div>
+                    <div class="header-text">
+                        <h3>AI Task Assistant</h3>
+                        <p class="status-text">● Online</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="clear-chat-btn" title="Clear Chat"><i class="fas fa-trash-alt"></i></button>
+                    <span id="close-chatbot">✕</span>
+                </div>
+            </div>
+            <div id="chat-messages">
+                <!-- Messages will be added here dynamically -->
+            </div>
+            <div id="chat-input-area">
+                <button id="attach-btn" title="Quick Commands"><i class="fas fa-paperclip"></i></button>
+                <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off">
+                <button id="emoji-btn" title="Emoji"><i class="fas fa-smile"></i></button>
+                <button id="send-message"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // WhatsApp-Style Chatbot with proper message ordering
+        function initializeChatbot() {
+            const chatTrigger = document.getElementById('chatbot-trigger');
+            const chatContainer = document.getElementById('chatbot-container');
+            const closeChatbot = document.getElementById('close-chatbot');
+            const clearChatBtn = document.getElementById('clear-chat-btn');
+            const chatMessages = document.getElementById('chat-messages');
+            const chatInput = document.getElementById('chat-input');
+            const sendMessageBtn = document.getElementById('send-message');
+            const attachBtn = document.getElementById('attach-btn');
+            const emojiBtn = document.getElementById('emoji-btn');
+            
+            let isTyping = false;
+
+            // Toggle chat window
+            chatTrigger.addEventListener('click', function() {
+                chatContainer.style.display = 'flex';
+                chatTrigger.style.display = 'none';
+                // Scroll to bottom when opening
+                setTimeout(() => {
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 100);
+            });
+
+            // Close chat window
+            closeChatbot.addEventListener('click', function() {
+                chatContainer.style.display = 'none';
+                chatTrigger.style.display = 'flex';
+            });
+
+            // Clear chat history
+            clearChatBtn.addEventListener('click', async function() {
+                if (confirm('Are you sure you want to clear the chat history?')) {
+                    try {
+                        if (authToken) {
+                            await fetch(`${API_BASE_URL}/chatbot/messages`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${authToken}`
+                                }
+                            });
+                        }
+                        // Clear UI
+                        chatMessages.innerHTML = '';
+                        // Show welcome message after clearing
+                        setTimeout(() => {
+                            showWelcomeMessage();
+                        }, 300);
+                    } catch (error) {
+                        console.error('Error clearing chat:', error);
+                    }
+                }
+            });
+
+            // Show welcome message
+            function showWelcomeMessage() {
+                const welcomeMsg = {
+                    text: `Hello! 👋 I'm your AI Task Assistant. How can I help you today?`,
+                    isBot: true,
+                    showQuickReplies: true
+                };
+                addMessageToUI(welcomeMsg);
+            }
+
+            // Quick reply options
+            const quickReplies = [
+                'Add a task',
+                'View my tasks',
+                'Task stats',
+                'Recurring task',
+                'Search tasks',
+                'Get help'
+            ];
+
+            // Send message function
+            async function sendMessage() {
+                const message = chatInput.value.trim();
+                if (!message || isTyping) return;
+
+                // Clear input immediately
+                chatInput.value = '';
+                
+                // Add user message FIRST - immediately
+                const userMsg = {
+                    text: message,
+                    isBot: false,
+                    timestamp: new Date()
+                };
+                addMessageToUI(userMsg);
+
+                // Scroll to bottom
+                scrollToBottom();
+
+                // Show typing indicator
+                showTypingIndicator();
+
+                // Call backend API
+                try {
+                    const botResponse = await sendToBackendChat(message);
+                    
+                    // Remove typing indicator
+                    removeTypingIndicator();
+
+                    // Add bot response
+                    const botMsg = {
+                        text: botResponse,
+                        isBot: true,
+                        timestamp: new Date()
+                    };
+                    addMessageToUI(botMsg);
+                    
+                } catch (error) {
+                    console.error('Chat API error:', error);
+                    removeTypingIndicator();
+                    
+                    // Fallback response
+                    const botMsg = {
+                        text: getBotResponse(message),
+                        isBot: true,
+                        timestamp: new Date()
+                    };
+                    addMessageToUI(botMsg);
+                }
+            }
+
+            // Add message to UI with WhatsApp-style formatting
+            function addMessageToUI(msgData) {
+                const msgDiv = document.createElement('div');
+                msgDiv.classList.add('message-wrapper');
+                msgDiv.classList.add(msgData.isBot ? 'bot-message' : 'user-message');
+                
+                const timestamp = msgData.timestamp ? formatTime(msgData.timestamp) : formatTime(new Date());
+                
+                msgDiv.innerHTML = `
+                    <div class="message-bubble">
+                        <div class="message-text">${formatMessageText(msgData.text)}</div>
+                        <div class="message-meta">
+                            <span class="message-time">${timestamp}</span>
+                            ${!msgData.isBot ? '<span class="message-status"><i class="fas fa-check-double"></i></span>' : ''}
+                        </div>
+                    </div>
+                    ${msgData.isBot && msgData.showQuickReplies ? `
+                        <div class="quick-replies">
+                            ${quickReplies.map(reply => `<button class="quick-reply-btn">${reply}</button>`).join('')}
+                        </div>
+                    ` : ''}
+                `;
+                
+                chatMessages.appendChild(msgDiv);
+                
+                // Scroll to bottom after message is added
+                scrollToBottom();
+
+                // Attach event listeners to quick reply buttons
+                if (msgData.isBot && msgData.showQuickReplies) {
+                    msgDiv.querySelectorAll('.quick-reply-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            chatInput.value = this.textContent;
+                            sendMessage();
+                        });
+                    });
+                }
+            }
+
+            // Format message text (convert newlines to <br>, parse simple markdown)
+            function formatMessageText(text) {
+                if (!text) return '';
+                
+                // Escape HTML first
+                const escaped = escapeHtml(text);
+                
+                // Convert **bold** to <strong>
+                let formatted = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+                // Convert newlines to <br>
+                formatted = formatted.replace(/\n/g, '<br>');
+                
+                return formatted;
+            }
+
+            // Format time to HH:MM AM/PM
+            function formatTime(date) {
+                return date.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+            }
+
+            // Scroll to bottom smoothly
+            function scrollToBottom() {
+                setTimeout(() => {
+                    chatMessages.scrollTo({
+                        top: chatMessages.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }, 50);
+            }
+
+            // Show typing indicator
+            function showTypingIndicator() {
+                if (isTyping) return;
+                isTyping = true;
+
+                const typingDiv = document.createElement('div');
+                typingDiv.classList.add('message-wrapper', 'bot-message', 'typing-indicator');
+                typingDiv.id = 'typing-indicator';
+                typingDiv.innerHTML = `
+                    <div class="message-bubble">
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                `;
+                chatMessages.appendChild(typingDiv);
+                scrollToBottom();
+            }
+
+            // Remove typing indicator
+            function removeTypingIndicator() {
+                const typingIndicator = document.getElementById('typing-indicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+                isTyping = false;
+            }
+
+            // Send message to backend API
+            async function sendToBackendChat(message) {
+                if (!authToken) {
+                    throw new Error('Not authenticated');
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/chatbot/chat`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({
+                            message: message
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.response || "I'm here to help!";
+                    } else {
+                        throw new Error('Backend chat API failed');
+                    }
+                } catch (error) {
+                    console.error('Backend chat error:', error);
+                    throw error;
+                }
+            }
+
+            // Escape HTML to prevent XSS
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Bot response logic (fallback)
+            function getBotResponse(userMessage) {
+                const msg = userMessage.toLowerCase();
+
+                if (!currentUser) {
+                    if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
+                        return 'Hello! 😊 Please sign in first to manage your tasks.';
+                    }
+                    return 'Please sign in to your account to manage tasks.';
+                }
+
+                if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
+                    return `Hello ${currentUser.full_name || 'friend'}! 😊 How can I help with your tasks today?`;
+                } else if (msg === 'no' || msg === 'nope' || msg === 'nah') {
+                    return 'No problem! 😊 Let me know if you need any help.';
+                } else if (msg.includes('add') || msg.includes('create')) {
+                    return 'Sure! Tell me the task details. Example: "Add task to buy groceries"';
+                } else if (msg.includes('show') || msg.includes('list') || msg.includes('view')) {
+                    return 'You can view all your tasks in the main panel above, or use the filter buttons!';
+                } else if (msg.includes('stats') || msg.includes('statistics')) {
+                    return 'Check the Task Stats section above for detailed analytics!';
+                } else if (msg.includes('help')) {
+                    return 'I can help you:\n**•** Add/Edit/Delete tasks\n**•** View task statistics\n**•** Create recurring tasks\n**•** Search and filter tasks\n\nJust ask!';
+                } else {
+                    return `I'm here to help with your tasks! Try: "Add task to..." or "Show my tasks"`;
+                }
+            }
+
+            // Event listeners
+            sendMessageBtn.addEventListener('click', sendMessage);
+
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            chatInput.addEventListener('input', function() {
+                // Auto-resize or handle input changes
+                if (this.value.trim()) {
+                    sendMessageBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                    sendMessageBtn.style.background = 'linear-gradient(135deg, #25D366, #128C7E)';
+                } else {
+                    sendMessageBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                    sendMessageBtn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
+                }
+            });
+
+            // Attach button - show quick commands
+            attachBtn.addEventListener('click', function() {
+                const commands = [
+                    'Add a task',
+                    'Show my tasks',
+                    'Task statistics',
+                    'Delete a task',
+                    'Complete a task',
+                    'Search tasks'
+                ];
+                
+                // Create a popup menu
+                const menu = document.createElement('div');
+                menu.style.cssText = `
+                    position: absolute;
+                    bottom: 70px;
+                    left: 20px;
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                    padding: 8px;
+                    z-index: 10001;
+                    min-width: 200px;
+                `;
+                menu.innerHTML = commands.map(cmd => 
+                    `<div class="quick-command-item" style="padding: 10px 16px; cursor: pointer; border-radius: 8px; transition: background 0.2s;">${cmd}</div>`
+                ).join('');
+                
+                menu.querySelectorAll('.quick-command-item').forEach((item, index) => {
+                    item.addEventListener('click', function() {
+                        chatInput.value = commands[index];
+                        sendMessage();
+                        menu.remove();
+                    });
+                    item.addEventListener('mouseenter', function() {
+                        this.style.background = '#f0f0f0';
+                    });
+                    item.addEventListener('mouseleave', function() {
+                        this.style.background = 'transparent';
+                    });
+                });
+                
+                document.body.appendChild(menu);
+                
+                // Close menu when clicking outside
+                setTimeout(() => {
+                    document.addEventListener('click', function closeMenu(e) {
+                        if (!menu.contains(e.target) && e.target !== attachBtn) {
+                            menu.remove();
+                            document.removeEventListener('click', closeMenu);
+                        }
+                    });
+                }, 100);
+            });
+
+            // Emoji button (placeholder for now)
+            emojiBtn.addEventListener('click', function() {
+                const emojis = ['😀', '😊', '👍', '✅', '🎉', '📝', '📊', '🔍', '⏰', '💪'];
+                const emojiMenu = document.createElement('div');
+                emojiMenu.style.cssText = `
+                    position: absolute;
+                    bottom: 70px;
+                    right: 70px;
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                    padding: 12px;
+                    z-index: 10001;
+                    display: grid;
+                    grid-template-columns: repeat(5, 1fr);
+                    gap: 8px;
+                `;
+                emojiMenu.innerHTML = emojis.map(e => 
+                    `<span style="font-size: 24px; cursor: pointer; transition: transform 0.2s;">${e}</span>`
+                ).join('');
+                
+                emojiMenu.querySelectorAll('span').forEach(emoji => {
+                    emoji.addEventListener('click', function() {
+                        chatInput.value += this.textContent;
+                        chatInput.focus();
+                        emojiMenu.remove();
+                    });
+                    emoji.addEventListener('mouseenter', function() {
+                        this.style.transform = 'scale(1.3)';
+                    });
+                    emoji.addEventListener('mouseleave', function() {
+                        this.style.transform = 'scale(1)';
+                    });
+                });
+                
+                document.body.appendChild(emojiMenu);
+                
+                setTimeout(() => {
+                    document.addEventListener('click', function closeEmojiMenu(e) {
+                        if (!emojiMenu.contains(e.target) && e.target !== emojiBtn) {
+                            emojiMenu.remove();
+                            document.removeEventListener('click', closeEmojiMenu);
+                        }
+                    });
+                }, 100);
+            });
+
+            // Initially hide the chat container
+            chatContainer.style.display = 'none';
+            
+            // Show initial welcome message
+            setTimeout(() => {
+                if (chatContainer.style.display !== 'none') {
+                    showWelcomeMessage();
+                }
+            }, 500);
+        }
+
+        // Initialize chatbot after DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initializeChatbot, 500);
+        });
+    </script>
+
+    <style>
+        /* WhatsApp-Style Chatbot Styles */
+        #simple-chatbot {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        /* Chat Trigger Button */
+        #chatbot-trigger {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+            z-index: 9999 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        #chatbot-trigger:hover {
+            transform: scale(1.1) rotate(10deg);
+            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.6);
+        }
+
+        #chatbot-trigger:active {
+            transform: scale(0.95);
+        }
+
+        /* Chat Container */
+        #chatbot-container {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 400px;
+            height: 600px;
+            max-height: calc(100vh - 120px);
+            background: #e5ddd5;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            display: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Chat Header */
+        #chatbot-header {
+            background: linear-gradient(135deg, #075E54, #128C7E);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .chatbot-header-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bot-profile-pic {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-text h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .status-text {
+            margin: 0;
+            font-size: 0.75rem;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-text::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #clear-chat-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+        }
+
+        #clear-chat-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        #close-chatbot {
+            font-size: 1.6rem;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        #close-chatbot:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        /* Chat Messages Area */
+        #chat-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #e5ddd5;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4c5b0' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        #chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Message Wrapper */
+        .message-wrapper {
+            display: flex;
+            flex-direction: column;
+            max-width: 75%;
+            animation: messageSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-wrapper.bot-message {
+            align-self: flex-start;
+        }
+
+        .message-wrapper.user-message {
+            align-self: flex-end;
+        }
+
+        /* Message Bubble */
+        .message-bubble {
+            padding: 8px 10px;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .bot-message .message-bubble {
+            background: white;
+            border-top-left-radius: 0;
+        }
+
+        .user-message .message-bubble {
+            background: linear-gradient(135deg, #dcf8c6, #c8e6a9);
+            border-top-right-radius: 0;
+        }
+
+        .message-text {
+            color: #111b21;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+            max-width: 320px;
+        }
+
+        .message-text strong {
+            font-weight: 600;
+            color: #075E54;
+        }
+
+        .message-meta {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            color: #667781;
+        }
+
+        .user-message .message-time {
+            color: #0a5c36;
+        }
+
+        .message-status {
+            color: #53bdeb;
+            font-size: 0.7rem;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator .message-bubble {
+            background: white;
+            padding: 12px 16px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            height: 20px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: #667781;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.7;
+            }
+            30% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
+        }
+
+        /* Quick Replies */
+        .quick-replies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            padding-left: 4px;
+        }
+
+        .quick-reply-btn {
+            background: rgba(18, 140, 126, 0.1);
+            color: #128C7E;
+            border: 1px solid #128C7E;
+            border-radius: 16px;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .quick-reply-btn:hover {
+            background: #128C7E;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(18, 140, 126, 0.3);
+        }
+
+        /* Chat Input Area */
+        #chat-input-area {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            background: #f0f2f5;
+            border-top: 1px solid #d1d7db;
+            gap: 8px;
+        }
+
+        #attach-btn,
+        #emoji-btn {
+            background: transparent;
+            border: none;
+            color: #54656f;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+        }
+
+        #attach-btn:hover,
+        #emoji-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+            color: #128C7E;
+            transform: rotate(15deg);
+        }
+
+        #chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e9edef;
+            border-radius: 24px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        #chat-input:focus {
+            border-color: #128C7E;
+            box-shadow: 0 0 0 2px rgba(18, 140, 126, 0.1);
+        }
+
+        #chat-input::placeholder {
+            color: #667781;
+        }
+
+        #send-message {
+            background: linear-gradient(135deg, #128C7E, #25D366);
+            color: white;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        #send-message:hover {
+            transform: scale(1.1) rotate(-10deg);
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+        }
+
+        #send-message:active {
+            transform: scale(0.95);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            #chatbot-container {
+                width: calc(100% - 40px);
+                height: calc(100vh - 140px);
+                right: 20px;
+                bottom: 100px;
+            }
+
+            #chatbot-trigger {
+                right: 20px;
+                bottom: 20px;
+                width: 56px;
+                height: 56px;
+                font-size: 24px;
+            }
+
+            .message-wrapper {
+                max-width: 85%;
+            }
+
+            .message-text {
+                max-width: 280px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #chatbot-container {
+                width: calc(100% - 20px);
+                right: 10px;
+                bottom: 90px;
+            }
+
+            #chatbot-trigger {
+                right: 15px;
+                bottom: 15px;
+                width: 52px;
+                height: 52px;
+            }
+        }
+    </style>
+</body>
+</html>

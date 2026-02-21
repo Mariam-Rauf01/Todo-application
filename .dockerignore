@@ -45,6 +45,7 @@ docker-compose.yml
 # Documentation
 *.md
 !requirements.txt
+!CHATBOT_WHATSAPP_STYLE_FIXES.md
 
 # Test files
 test_*.py
