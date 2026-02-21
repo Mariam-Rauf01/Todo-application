@@ -50,7 +50,11 @@ export default function ChatBot() {
 
       if (response.ok) {
         const data = await response.json();
-        const loadedMessages: Message[] = data.map((msg: any) => ({
+        // Sort messages by timestamp - oldest first (for display at top)
+        const sortedMessages = data.sort((a: any, b: any) => 
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+        const loadedMessages: Message[] = sortedMessages.map((msg: any) => ({
           id: msg.id,
           text: msg.sender === 'user' ? msg.message : (msg.response || msg.message),
           sender: msg.sender as 'user' | 'bot',
