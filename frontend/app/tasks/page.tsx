@@ -243,12 +243,17 @@ export default function TasksPage() {
       setNewTask({ title: '', description: '', due_date: '', priority: 'medium', category: '' });
       setShowAddForm(false);
       showSuccess('Task added successfully!', 'created');
-      
+
       // Dispatch event to update chatbot
       window.dispatchEvent(new CustomEvent('task-action', {
         detail: { action: 'created', taskTitle: created.title }
       }));
-      
+
+      // Force a full refresh to ensure data is synced
+      setTimeout(() => {
+        fetchTasks();
+      }, 300);
+
       setError(''); // Clear any previous errors
     } catch (err) {
       // Only show error for real failures
