@@ -84,14 +84,25 @@ class TaskBase(BaseModel):
         """
         import logging
         logger = logging.getLogger(__name__)
+        import re
         
         if value is None:
             return None
         if isinstance(value, datetime):
             return value
         if isinstance(value, str):
+            # Check if it's a date-only string (YYYY-MM-DD)
+            if re.match(r'^\d{4}-\d{2}-\d{2}$', value):
+                # Convert date-only to datetime at midnight
+                try:
+                    parsed = dateutil_parser.parse(value)
+                    logger.info(f"Parsed date-only string: {value} -> {parsed}")
+                    return parsed
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Failed to parse date '{value}': {e}. Setting to None.")
+                    return None
             try:
-                # Try to parse using dateutil (handles most formats)
+                # Try to parse using dateutil (handles ISO datetime strings)
                 parsed = dateutil_parser.parse(value)
                 logger.info(f"Successfully parsed datetime: {value} -> {parsed}")
                 return parsed
