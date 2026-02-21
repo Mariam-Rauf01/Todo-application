@@ -372,6 +372,8 @@ export default function FloatingChatbot() {
     const text = inputText.trim();
     if (!text || isLoading) return;
 
+    console.log('📤 Sending message:', text);
+
     const userMessage: Message = {
       id: Date.now().toString(),
       text,
@@ -379,7 +381,12 @@ export default function FloatingChatbot() {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    console.log('➕ Adding user message to state, current count:', messages.length);
+    setMessages(prev => {
+      const newMessages = [...prev, userMessage];
+      console.log('✅ User message added, new count:', newMessages.length);
+      return newMessages;
+    });
     setInputText('');
     setIsLoading(true);
 
@@ -492,7 +499,13 @@ export default function FloatingChatbot() {
         timestamp: new Date(),
       };
 
-      setMessages(prev => [...prev, botMessage]);
+      console.log('🤖 Bot response:', response);
+      console.log('➕ Adding bot message to state');
+      setMessages(prev => {
+        const newMessages = [...prev, botMessage];
+        console.log('✅ Bot message added, total count:', newMessages.length);
+        return newMessages;
+      });
 
       // Backend already saves messages in /chat endpoint, no need to save again
 
