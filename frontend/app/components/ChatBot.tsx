@@ -153,27 +153,34 @@ export default function ChatBot() {
       {/* Chat Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl shadow-lg shadow-purple-500/40 hover:shadow-purple-500/60 transition-all duration-300 transform hover:scale-110 ${isOpen ? 'rotate-90' : ''}`}
+        className={`fixed bottom-6 right-6 z-50 w-14 h-14 md:w-16 md:h-16 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xl md:text-2xl shadow-lg shadow-purple-500/40 hover:shadow-purple-500/60 transition-all duration-300 transform hover:scale-110 ${isOpen ? 'rotate-90' : ''}`}
         aria-label="Toggle chatbot"
       >
-        {isOpen ? '✕' : '💬'}
+        {isOpen ? (
+          <span className="text-lg">✕</span>
+        ) : (
+          <span className="animate-pulse">💬</span>
+        )}
       </button>
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-slide-up">
+        <div className="fixed bottom-20 right-4 md:bottom-24 md:right-6 z-50 w-[90vw] md:w-96 h-[60vh] md:h-[500px] bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-slide-up">
           {/* Header */}
-          <div className="bg-gradient-to-r from-violet-500 to-purple-600 p-4 flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">
+          <div className="bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 p-4 flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-2xl animate-bounce">
               🤖
             </div>
-            <div>
-              <h3 className="text-white font-bold">TaskMate AI</h3>
-              <p className="text-white/80 text-xs">Your AI Task Assistant</p>
+            <div className="flex-1">
+              <h3 className="text-white font-bold text-lg">TaskMate AI</h3>
+              <p className="text-white/80 text-xs flex items-center gap-1">
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                Online • AI Powered
+              </p>
             </div>
             <button
               onClick={async () => {
-                if (confirm('Clear all chat history?')) {
+                if (confirm('Sab chat history clear karna hai? 🗑️')) {
                   try {
                     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
                     const token = localStorage.getItem('access_token');
@@ -189,7 +196,7 @@ export default function ChatBot() {
                   }
                 }
               }}
-              className="ml-auto text-white/80 hover:text-white text-sm"
+              className="p-2 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-all"
               title="Clear chat"
             >
               🗑️
@@ -197,15 +204,18 @@ export default function ChatBot() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-violet-50">
             {messages.length === 0 && (
-              <div className="text-center text-gray-500 py-8">
-                <div className="text-4xl mb-2">👋</div>
-                <p className="font-medium">Hello! I'm TaskMate AI</p>
-                <p className="text-sm mt-1">Tell me what task you want to add!</p>
-                <div className="mt-4 text-xs text-gray-400">
-                  <p>Try: "Add task: Buy groceries"</p>
-                  <p>Or: "Create a high priority task: Finish report by tomorrow"</p>
+              <div className="text-center text-gray-500 py-8 px-4">
+                <div className="text-5xl mb-3">👋</div>
+                <p className="font-bold text-xl text-gray-700">As-salamu alaykum! </p>
+                <p className="text-sm mt-2 text-gray-500">Main TaskMate hu, aapki task manager buddy! 😊</p>
+                <div className="mt-6 bg-white p-4 rounded-2xl shadow-sm text-left">
+                  <p className="text-xs font-semibold text-gray-400 mb-3">Kuch try karein:</p>
+                  <p className="text-sm text-violet-600">• "Add task: Groceries le aana 🛒"</p>
+                  <p className="text-sm text-violet-600">• "Project report kal tak khatam karna"</p>
+                  <p className="text-sm text-violet-600">• "Meri sari tasks dikhao"</p>
+                  <p className="text-sm text-violet-600">• "Task 1 complete kar do ✅"</p>
                 </div>
               </div>
             )}
