@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 interface Message {
   id: number;
@@ -9,13 +9,32 @@ interface Message {
   timestamp: Date;
 }
 
+interface UserInfo {
+  name: string;
+  email: string;
+}
+
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load user info on mount
+  useEffect(() => {
+    const userName = localStorage.getItem('user_name');
+    const userEmail = localStorage.getItem('user_email');
+    
+    if (userName || userEmail) {
+      setUserInfo({
+        name: userName || 'User',
+        email: userEmail || '',
+      });
+    }
+  }, []);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -29,10 +48,25 @@ export default function ChatBot() {
     }
   }, [isOpen]);
 
-  // Load previous chat history when chat opens
+  // Load previous chat history when chat opens (only first time)
+  const hasLoadedHistory = useRef(false);
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if (isOpen && messages.length === 0 && !hasLoadedHistory.current) {
+      hasLoadedHistory.current = true;
       loadChatHistory();
+    }
+  }, [isOpen]);
+
+  // Add welcome message if no messages
+  useEffect(() => {
+    if (isOpen && messages.length === 0 && hasLoadedHistory.current) {
+      const welcomeMessage: Message = {
+        id: Date.now(),
+        text: "👋 Assalamu alaykum! Welcome to TaskMate AI!\n\nI'm your personal task manager assistant.\n\nHow can I help you today? 😊",
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
     }
   }, [isOpen]);
 
@@ -50,7 +84,6 @@ export default function ChatBot() {
 
       if (response.ok) {
         const data = await response.json();
-        // Sort messages by timestamp - oldest first (for display at top)
         const sortedMessages = data.sort((a: any, b: any) => 
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
@@ -60,14 +93,34 @@ export default function ChatBot() {
           sender: msg.sender as 'user' | 'bot',
           timestamp: new Date(msg.created_at)
         }));
-        setMessages(loadedMessages);
+        
+        // Add welcome message at the start if no messages loaded
+        if (loadedMessages.length === 0) {
+          const welcomeMessage: Message = {
+            id: Date.now(),
+            text: "👋 Assalamu alaykum! Welcome to TaskMate AI!\n\nI'm your personal task manager assistant.\n\nHow can I help you today? 😊",
+            sender: 'bot',
+            timestamp: new Date()
+          };
+          setMessages([welcomeMessage]);
+        } else {
+          setMessages(loadedMessages);
+        }
       }
     } catch (error) {
       console.error('Failed to load chat history:', error);
+      // Show welcome message on error
+      const welcomeMessage: Message = {
+        id: Date.now(),
+        text: "👋 Assalamu alaykum! Welcome to TaskMate AI!\n\nI'm your personal task manager assistant.\n\nHow can I help you today? 😊",
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
     }
   };
 
-  // Listen for task-action events to show notification in chatbot
+  // Listen for task-action events
   useEffect(() => {
     const handleTaskAction = (event: Event) => {
       const customEvent = event as CustomEvent;
@@ -85,6 +138,115 @@ export default function ChatBot() {
     window.addEventListener('task-action', handleTaskAction);
     return () => window.removeEventListener('task-action', handleTaskAction);
   }, []);
+
+  // Detect Roman Urdu
+  const isRomanUrdu = (text: string): boolean => {
+    const romanUrduPatterns = [
+      /kaisa/i, /kaise/i, /kya/i, /kaun/i, /kahaan/i, /kyun/i,
+      /main/i, /tum/i, /woh/i, /yeh/i, /mera/i, /tera/i, /hamara/i,
+      /hai/i, /ho/i, /tha/i, /thi/i, /the/i, /honge/i, /hoga/i, /hogi/i,
+      /jao/i, /aao/i, /dekho/i, /suno/i, /bolo/i, /likho/i, /karo/i, /kijiye/i,
+      /achha/i, /bahut/i, /kam/i, /zyada/i, /theek/i, /galat/i, /sahi/i,
+      /mujhe/i, /tumhe/i, /unhe/i, /isko/i, /usko/i, /iske/i, /uske/i,
+      /aur/i, /ya/i, /lekin/i, /magar/i, /phir/i, /abhi/i, /kabhi/i, /hamesha/i,
+      /kal/i, /aaj/i, /parso/i, /inshaallah/i, /bismillah/i,
+      /shukriya/i, /mashallah/i, /alhamdullillah/i,
+      /kya haal/i, /kya khbr/i, /zaroorat hai/i,
+      /mein/i, /ko/i, /se/i, /pe/i, /ka/i, /ki/i, /ke/i,
+      /haan/i, /nahi/i, /na/i, /ji/i, /zaroor/i, /bilkul/i,
+      /phir bhi/i, /to/i, /koi/i, /kuch/i, /sab/i, /kitna/i, /itna/i, /utna/i,
+      /accha/i, /theek hai/i, /chalega/i, /ho jayega/i,
+      /de do/i, /le lo/i, /kar do/i, /kar denge/i,
+      /salam/i, /asalam/i, /peace/i, /alvida/i, /phir milenge/i,
+    ];
+    const lowerText = text.toLowerCase();
+    return romanUrduPatterns.some(pattern => pattern.test(lowerText));
+  };
+
+  // Bot response logic with Roman Urdu support
+  const getBotResponse = (userInput: string): string => {
+    const lowerInput = userInput.toLowerCase();
+    const isUrdu = isRomanUrdu(userInput);
+    
+    // User identity check
+    if (lowerInput.includes('who am i') || lowerInput.includes('kon hun') || 
+        lowerInput.includes('mein kaun') || lowerInput.includes('mera naam') ||
+        lowerInput.includes('identify') || lowerInput.includes('mija kaun')) {
+      if (userInfo) {
+        return isUrdu 
+          ? `📋 Aapki information:\n\n👤 Name: ${userInfo.name}\n📧 Email: ${userInfo.email}\n\nKoi aur sawaal? 😊`
+          : `📋 Your information:\n\n👤 Name: ${userInfo.name}\n📧 Email: ${userInfo.email}\n\nAny other questions? 😊`;
+      } else {
+        return isUrdu 
+          ? "⚠️ Mujhe aapki information nahi mili. Please login karein phir try karein."
+          : "⚠️ I don't have your information. Please login first and try again.";
+      }
+    }
+    
+    // Greetings
+    if (lowerInput.includes('hello') || lowerInput.includes('hi') || 
+        lowerInput.includes('hey') || lowerInput.includes('salam') ||
+        lowerInput.includes('asalam') || lowerInput.includes('peace') ||
+        lowerInput.includes('greetings')) {
+      return "👋 Assalamu alaykum!\n\nHello! Welcome to TaskMate AI! 😊\n\nHow can I assist you today?\n\nAap ki tareh kar sakta hoon?";
+    }
+    
+    // Help
+    if (lowerInput.includes('help') || lowerInput.includes('madad') || 
+        lowerInput.includes('sahayata') || lowerInput.includes('guide')) {
+      return isUrdu
+        ? `🤖 TaskMate AI - Help Guide\n\nMein aapki in cheezon mein madad kar sakta hoon:\n\n✅ Tasks add karna\n✅ Tasks dekhna\n✅ Tasks complete karna\n✅ Tasks delete karna\n\nExamples:\n• "Add task: Groceries le aana 🛒"\n• "Meri sari tasks dikhao"\n• "Task 1 complete kar do ✅"\n\nKya karna chahte hain? 😊`
+        : `🤖 TaskMate AI - Help Guide\n\nI can help you with:\n\n✅ Adding new tasks\n✅ Viewing your tasks\n✅ Completing tasks\n✅ Deleting tasks\n\nExamples:\n• "Add task: Buy groceries 🛒"\n• "Show all my tasks"\n• "Complete task 1 ✅"\n\nWhat would you like to do? 😊`;
+    }
+    
+    // Tasks
+    if (lowerInput.includes('task') || lowerInput.includes('kaam') || 
+        lowerInput.includes('work') || lowerInput.includes('todolist')) {
+      return isUrdu
+        ? "📝 Tasks ke baare mein madad chahiye?\n\nAap mujhe bol sakte hain:\n• 'Add task: Groceries le aana'\n• 'Meri sari tasks dikhao'\n• 'Task 1 complete kar do'\n• 'Task 2 delete kar do'\n\nKaisa task add karna chahte hain? 😊"
+        : "📝 Need help with tasks?\n\nYou can tell me:\n• 'Add task: Buy groceries'\n• 'Show all my tasks'\n• 'Complete task 1'\n• 'Delete task 2'\n\nWhat task would you like to add? 😊";
+    }
+    
+    // Thank you
+    if (lowerInput.includes('thank') || lowerInput.includes('shukriya') || 
+        lowerInput.includes('shukria') || lowerInput.includes('appreciate')) {
+      return isUrdu
+        ? "😊 Aapka shukriya! Khush hua madad kar ke!\n\nKoi aur sawaal ho to zaroor puchiye!"
+        : "😊 You're welcome! Happy to help!\n\nFeel free to ask if you have any more questions!";
+    }
+    
+    // How are you
+    if (lowerInput.includes('how are') || lowerInput.includes('kaisa hai') || 
+        lowerInput.includes('kaisi hai') || lowerInput.includes('kya haal') ||
+        lowerInput.includes('kya khbr')) {
+      return isUrdu
+        ? "😊 Main theek hoon, shukriya! ☺️\n\nAap kais? Aapki kya help chahiye?"
+        : "😊 I'm doing great, thank you! ☺️\n\nHow are you? How can I help you today?";
+    }
+    
+    // What's your name
+    if (lowerInput.includes('your name') || lowerInput.includes('tumhara naam') || 
+        lowerInput.includes('aap ka naam') || lowerInput.includes('who are you') ||
+        lowerInput.includes('kon ho')) {
+      return isUrdu
+        ? "🤖 Mera naam TaskMate AI hai!\n\nMain aapki task management mein madad karne ke liye hoon. 😊\n\nAap mujhe tasks add karne, dekhne, complete karne aur delete karne ke liye bol sakte hain!"
+        : "🤖 My name is TaskMate AI!\n\nI'm here to help you manage your tasks! 😊\n\nYou can ask me to add, view, complete, or delete tasks!";
+    }
+    
+    // Goodbye
+    if (lowerInput.includes('bye') || lowerInput.includes('goodbye') || 
+        lowerInput.includes('alvida') || lowerInput.includes('phir milenge') ||
+        lowerInput.includes('see you later')) {
+      return isUrdu
+        ? "👋 Alvida! Phir milenge! 😊\n\nAllah hafiz! 🫡"
+        : "👋 Goodbye! See you later! 😊\n\nTake care! 🫡";
+    }
+    
+    // Default response
+    return isUrdu
+      ? "🤔 Samajh gaya! Main yahan task management mein madad ke liye hoon. 😊\n\nAap mujhe ye bol sakte hain:\n• Task add karna\n• Meri tasks dikhana\n• Task complete karna\n• Task delete karna\n• Help chahiye\n\nAap kya karna chahte hain?"
+      : "🤔 I understand! I'm here to help you manage your tasks! 😊\n\nYou can ask me to:\n• Add a new task\n• Show your tasks\n• Complete a task\n• Delete a task\n• Get help\n\nWhat would you like to do?";
+  };
 
   const sendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
@@ -122,24 +284,26 @@ export default function ChatBot() {
       
       const botMessage: Message = {
         id: Date.now() + 1,
-        text: data.bot_response || data.response || 'I\'m here to help with your tasks!',
+        text: data.bot_response || data.response || getBotResponse(messageToSend),
         sender: 'bot',
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, botMessage]);
 
-      // Dispatch event to refresh tasks if a task was created/updated
+      // Refresh tasks if a task was created/updated
       window.dispatchEvent(new CustomEvent('refresh-tasks'));
     } catch (error) {
       console.error('Chat error:', error);
-      const errorMessage: Message = {
+      
+      // Use local bot response as fallback
+      const botMessage: Message = {
         id: Date.now() + 1,
-        text: 'Sorry, I\'m having trouble connecting. Please try again.',
+        text: getBotResponse(messageToSend),
         sender: 'bot',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, botMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -154,7 +318,7 @@ export default function ChatBot() {
 
   return (
     <>
-      {/* Chat Toggle Button */}
+      {/* Chat Toggle Button - Fixed position */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed bottom-6 right-6 z-50 w-14 h-14 md:w-16 md:h-16 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xl md:text-2xl shadow-lg shadow-purple-500/40 hover:shadow-purple-500/60 transition-all duration-300 transform hover:scale-110 ${isOpen ? 'rotate-90' : ''}`}
@@ -167,7 +331,7 @@ export default function ChatBot() {
         )}
       </button>
 
-      {/* Chat Window */}
+      {/* Chat Window - Only render when open */}
       {isOpen && (
         <div className="fixed bottom-20 right-4 md:bottom-24 md:right-6 z-50 w-[90vw] md:w-96 h-[60vh] md:h-[500px] bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-slide-up">
           {/* Header */}
@@ -197,6 +361,7 @@ export default function ChatBot() {
                     setMessages([]);
                   } catch (error) {
                     console.error('Failed to clear chat:', error);
+                    setMessages([]);
                   }
                 }
               }}
@@ -214,13 +379,6 @@ export default function ChatBot() {
                 <div className="text-5xl mb-3">👋</div>
                 <p className="font-bold text-xl text-gray-700">As-salamu alaykum! </p>
                 <p className="text-sm mt-2 text-gray-500">Main TaskMate hu, aapki task manager buddy! 😊</p>
-                <div className="mt-6 bg-white p-4 rounded-2xl shadow-sm text-left">
-                  <p className="text-xs font-semibold text-gray-400 mb-3">Kuch try karein:</p>
-                  <p className="text-sm text-violet-600">• "Add task: Groceries le aana 🛒"</p>
-                  <p className="text-sm text-violet-600">• "Project report kal tak khatam karna"</p>
-                  <p className="text-sm text-violet-600">• "Meri sari tasks dikhao"</p>
-                  <p className="text-sm text-violet-600">• "Task 1 complete kar do ✅"</p>
-                </div>
               </div>
             )}
             {messages.map((message) => (
@@ -234,6 +392,10 @@ export default function ChatBot() {
                       ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
                       : 'bg-white border border-gray-200 text-gray-800'
                   }`}
+                  style={{
+                    borderTopLeftRadius: message.sender === 'bot' ? 4 : 18,
+                    borderTopRightRadius: message.sender === 'user' ? 4 : 18,
+                  }}
                 >
                   <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                   <p className={`text-xs mt-1 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-400'}`}>

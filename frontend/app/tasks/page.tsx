@@ -97,7 +97,7 @@ export default function TasksPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Always fetch fresh tasks when page loads or navigates to
+    // Always fetch fresh tasks when page loads
     fetchTasks();
     setIsLoaded(true);
 
@@ -106,31 +106,11 @@ export default function TasksPage() {
       fetchTasks();
     };
 
-    // Listen for refresh-tasks event from chatbot
+    // Listen for refresh-tasks event from chatbot (only for external updates)
     window.addEventListener('refresh-tasks', handleRefresh);
-
-    // Listen for navigation focus - refetch when user navigates back to this page
-    const handleFocus = () => {
-      console.log('📄 Page focused, refreshing tasks...');
-      fetchTasks();
-    };
-    window.addEventListener('focus', handleFocus);
-
-    // Check for chatbot trigger on mount (if user navigated from chatbot)
-    const lastTrigger = localStorage.getItem('tasks-refresh-trigger');
-    if (lastTrigger) {
-      const triggerTime = parseInt(lastTrigger);
-      const now = Date.now();
-      // If trigger was in last 60 seconds, refresh immediately
-      if (now - triggerTime < 60000) {
-        console.log('🔄 Recent chatbot action detected, refreshing...');
-        setTimeout(() => fetchTasks(), 50);
-      }
-    }
 
     return () => {
       window.removeEventListener('refresh-tasks', handleRefresh);
-      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 
@@ -244,16 +224,6 @@ export default function TasksPage() {
       setNewTask({ title: '', description: '', due_date: '', priority: 'medium', category: '' });
       setShowAddForm(false);
       showSuccess('Task added successfully!', 'created');
-
-      // Dispatch event to update chatbot
-      window.dispatchEvent(new CustomEvent('task-action', {
-        detail: { action: 'created', taskTitle: created.title }
-      }));
-
-      // Force a full refresh to ensure data is synced
-      setTimeout(() => {
-        fetchTasks();
-      }, 300);
 
       setError(''); // Clear any previous errors
     } catch (err) {
@@ -449,20 +419,12 @@ export default function TasksPage() {
         <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
+      {/* Modern Toast Notification */}
       {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowSuccessModal(false)}
-          />
-          <div className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 animate-scale-in">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-3xl">✓</span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Success!</h3>
-              <p className="text-gray-500">{successMessage}</p>
-            </div>
+        <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 animate-slide-down">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+            <span className="text-xl">✓</span>
+            <span className="font-medium">{successMessage}</span>
           </div>
         </div>
       )}
