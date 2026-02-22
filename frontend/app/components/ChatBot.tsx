@@ -529,6 +529,10 @@ export default function ChatBot() {
            lowerText.includes('remove task') ||
            lowerText.includes('task delete') ||
            lowerText.includes('task remove') ||
+           lowerText.includes('update task') ||
+           lowerText.includes('edit task') ||
+           lowerText.includes('change task') ||
+           lowerText.includes('modify task') ||
            lowerText.includes('show tasks') ||
            lowerText.includes('my tasks') ||
            lowerText.includes('list tasks') ||
@@ -671,7 +675,14 @@ Any other questions? 😊`;
       lowerMsg.includes('list tasks') ||
       lowerMsg.includes('view tasks') ||
       lowerMsg.includes('all tasks') ||
-      (lowerMsg.includes('task') && !isTaskAddRequest && !isTaskCompleteRequest && !isTaskDeleteRequest);
+      (lowerMsg.includes('task') && !isTaskAddRequest && !isTaskCompleteRequest && !isTaskDeleteRequest && !lowerMsg.includes('update') && !lowerMsg.includes('edit') && !lowerMsg.includes('change') && !lowerMsg.includes('modify'));
+
+    // Check for update task request
+    const isTaskUpdateRequest = 
+      lowerMsg.includes('update task') ||
+      lowerMsg.includes('edit task') ||
+      lowerMsg.includes('change task') ||
+      lowerMsg.includes('modify task');
 
     // Handle show tasks request - show all tasks with clickable buttons
     if (isShowTasksRequest) {
@@ -735,29 +746,113 @@ Any other questions? 😊`;
       return;
     }
 
+    // Handle update task request
+    if (isTaskUpdateRequest) {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+        const token = localStorage.getItem('access_token');
+        const userId = localStorage.getItem('user_id');
+        
+        // Extract task number and new title from message
+        // Format: "update task 1 to new title" or "edit task 1: new title"
+        const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || messageToSend.match(/(\d+)/);
+        
+        if (taskIdMatch && userId && token) {
+          // Get the new title from the message
+          const newTitle = messageToSend
+            .replace(/update task:?\s*#?\d+/i, '')
+            .replace(/edit task:?\s*#?\d+/i, '')
+            .replace(/change task:?\s*#?\d+/i, '')
+            .replace(/modify task:?\s*#?\d+/i, '')
+            .replace(/to/i, '')
+            .replace(/:/i, '')
+            .trim();
+          
+          if (newTitle && newTitle.length > 0) {
+            // Get tasks to find the task
+            const tasksRes = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (tasksRes.ok) {
+              const allTasks = await tasksRes.json();
+              const sortedTasks = allTasks.sort((a: any, b: any) => 
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              );
+              const taskIndex = parseInt(taskIdMatch[1]) - 1;
+              
+              if (sortedTasks[taskIndex]) {
+                const taskToUpdate = sortedTasks[taskIndex];
+                
+                // Update the task
+                const updateRes = await fetch(`${backendUrl}/api/tasks/${taskToUpdate.id}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ title: newTitle })
+                });
+                
+                if (updateRes.ok) {
+                  // Make sure chat is open to show message
+                  setIsOpen(true);
+                  
+                  const taskActionResult = `✅ Task updated! "${taskToUpdate.title}" → "${newTitle}"`;
+                  const botMessage: Message = {
+                    id: Date.now() + 1,
+                    text: taskActionResult,
+                    sender: 'bot',
+                    timestamp: new Date()
+                  };
+                  setMessages(prev => [...prev, botMessage]);
+                  window.dispatchEvent(new CustomEvent('refresh-tasks'));
+                  setIsLoading(false);
+                  return;
+                }
+              }
+            }
+          }
+        }
+        
+        // If no valid update, show instructions
+        const botMessage: Message = {
+          id: Date.now() + 1,
+          text: "✏️ To update a task, use:\n\n'Update task 1 to new title'\n\nExample: 'Update task 1 to Buy vegetables'\n\nThis will change the task title.",
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, botMessage]);
+      } catch (error) {
+        console.error('Failed to update task:', error);
+      }
+      setIsLoading(false);
+      return;
+    }
+
     let taskActionResult = '';
 
     // Try to create task locally
     if (isTaskAddRequest) {
-      try {
-        let taskTitle = messageToSend
-          .replace(/add task:?/i, '')
-          .replace(/create task:?/i, '')
-          .replace(/new task:?/i, '')
-          .replace(/task add:?/i, '')
-          .replace(/task create:?/i, '')
-          .replace(/please/i, '')
-          .replace(/can you/i, '')
-          .replace(/i want to/i, '')
-          .replace(/i need to/i, '')
-          .trim();
-        
-        // Also handle just "add" followed by title
-        if (!taskTitle && lowerMsg.startsWith('add ')) {
-          taskTitle = lowerMsg.replace(/^add\s+/i, '').trim();
-        }
-        
-        if (taskTitle && taskTitle.length > 0) {
+      let taskTitle = messageToSend
+        .replace(/add task:?/i, '')
+        .replace(/create task:?/i, '')
+        .replace(/new task:?/i, '')
+        .replace(/task add:?/i, '')
+        .replace(/task create:?/i, '')
+        .replace(/please/i, '')
+        .replace(/can you/i, '')
+        .replace(/i want to/i, '')
+        .replace(/i need to/i, '')
+        .trim();
+      
+      // Also handle just "add" followed by title
+      if (!taskTitle && lowerMsg.startsWith('add ')) {
+        taskTitle = lowerMsg.replace(/^add\s+/i, '').trim();
+      }
+      
+      if (taskTitle && taskTitle.length > 0) {
+        try {
           const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
           const token = localStorage.getItem('access_token');
           const userId = localStorage.getItem('user_id');
@@ -785,7 +880,10 @@ Any other questions? 😊`;
                 : `✅ Task "${taskTitle}" successfully created!`;
               console.log('✅ Task created from chatbot!');
               
-              // Send bot response and return to avoid duplicate
+              // Make sure chat is open
+              setIsOpen(true);
+              
+              // Send bot response
               const botMessage: Message = {
                 id: Date.now() + 1,
                 text: taskActionResult,
@@ -798,9 +896,9 @@ Any other questions? 😊`;
               return;
             }
           }
+        } catch (taskError) {
+          console.error('Failed to create task from chatbot:', taskError);
         }
-      } catch (taskError) {
-        console.error('Failed to create task from chatbot:', taskError);
       }
     }
 
@@ -872,7 +970,10 @@ Any other questions? 😊`;
                   : `✅ Task "${taskToComplete.title}" completed! Great job! 🎉`;
                 console.log('✅ Task completed from chatbot!');
                 
-                // Send bot response and return to avoid duplicate
+                // Make sure chat is open to show message
+                setIsOpen(true);
+                
+                // Send bot response
                 const botMessage: Message = {
                   id: Date.now() + 1,
                   text: taskActionResult,
@@ -975,7 +1076,10 @@ Any other questions? 😊`;
                   : `✅ Task "${taskToDelete.title}" has been deleted!`;
                 console.log('✅ Task deleted from chatbot!');
                 
-                // Send bot response and return to avoid duplicate
+                // Make sure chat is open to show message
+                setIsOpen(true);
+                
+                // Send bot response
                 const botMessage: Message = {
                   id: Date.now() + 1,
                   text: taskActionResult,
@@ -1092,6 +1196,9 @@ Any other questions? 😊`;
                   ? `✅ Task "${taskToIncomplete.title}" ab pending hai!`
                   : `✅ Task "${taskToIncomplete.title}" marked as pending!`;
                 console.log('✅ Task marked as incomplete from chatbot!');
+                
+                // Make sure chat is open to show message
+                setIsOpen(true);
                 
                 const botMessage: Message = {
                   id: Date.now() + 1,
