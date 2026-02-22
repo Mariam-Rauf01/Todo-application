@@ -829,40 +829,40 @@ export default function ChatBot() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
+            className="absolute inset-0 bg-gradient-to-br from-violet-900/80 via-purple-900/80 to-pink-900/80 backdrop-blur-md"
             onClick={() => setShowConfirmModal(false)}
           />
           {/* Modal Content */}
-          <div className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 animate-scale-in">
+          <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-scale-in border border-white/20">
             <div className="text-center">
-              {/* Icon */}
-              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                <span className="text-3xl">⚠️</span>
+              {/* Animated Icon */}
+              <div className="w-20 h-20 mx-auto mb-5 bg-gradient-to-br from-red-100 to-orange-100 rounded-full flex items-center justify-center shadow-inner">
+                <span className="text-4xl animate-bounce">⚠️</span>
               </div>
               
-              {/* Title */}
-              <h3 className="text-xl font-bold text-gray-800 mb-2">
-                Invalid Message
+              {/* Title with gradient */}
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent mb-3">
+                Oops!
               </h3>
               
               {/* Description */}
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 mb-8 leading-relaxed">
                 I didn't understand that. Would you like to reload the page and try again?
               </p>
               
-              {/* Buttons */}
-              <div className="flex gap-3">
+              {/* Buttons with glass effect */}
+              <div className="flex gap-4">
                 <button
                   onClick={() => setShowConfirmModal(false)}
-                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                  className="flex-1 px-6 py-3.5 bg-gray-100/80 backdrop-blur text-gray-700 rounded-2xl font-semibold hover:bg-gray-200/90 transition-all duration-300 shadow-sm hover:shadow-md"
                 >
-                  Cancel
+                  ✕ Cancel
                 </button>
                 <button
                   onClick={handleConfirmReload}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-semibold hover:from-red-600 hover:to-orange-600 transition-colors shadow-lg shadow-red-500/30"
+                  className="flex-1 px-6 py-3.5 bg-gradient-to-r from-red-500 via-orange-500 to-red-500 text-white rounded-2xl font-semibold hover:from-red-600 hover:via-orange-600 hover:to-red-600 transition-all duration-300 shadow-lg shadow-orange-500/40 hover:shadow-orange-500/60 transform hover:scale-[1.02]"
                 >
-                  Reload Page
+                  🔄 Reload
                 </button>
               </div>
             </div>
@@ -870,94 +870,163 @@ export default function ChatBot() {
         </div>
       )}
 
-      {/* Chat Toggle Button - Fixed position */}
+      {/* Chat Toggle Button - Enhanced with glow effect */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-6 right-6 z-50 w-14 h-14 md:w-16 md:h-16 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xl md:text-2xl shadow-lg shadow-purple-500/40 hover:shadow-purple-500/60 transition-all duration-300 transform hover:scale-110 ${isOpen ? 'rotate-90' : ''}`}
+        className={`fixed bottom-6 right-6 z-50 w-16 h-16 md:w-18 md:h-18 
+          bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 
+          rounded-full flex items-center justify-center text-white text-2xl md:text-3xl 
+          shadow-lg shadow-purple-500/50 hover:shadow-purple-500/80 
+          transition-all duration-300 transform hover:scale-110 hover:rotate-12
+          ${isOpen ? 'rotate-90' : 'animate-pulse-slow'}
+          ring-4 ring-purple-500/20 hover:ring-purple-500/40`}
         aria-label="Toggle chatbot"
       >
         {isOpen ? (
-          <span className="text-lg">✕</span>
+          <span className="text-xl transform hover:scale-125 transition-transform">✕</span>
         ) : (
-          <span className="animate-pulse">💬</span>
+          <span className="transform hover:scale-125 transition-transform">💬</span>
         )}
       </button>
 
-      {/* Chat Window - Only render when open */}
+      {/* Chat Window - Enhanced with glass morphism */}
       {isOpen && (
-        <div className="fixed bottom-20 right-4 md:bottom-24 md:right-6 z-50 w-[90vw] md:w-96 h-[60vh] md:h-[500px] bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-slide-up">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 p-4 flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-2xl animate-bounce">
+        <div className="fixed bottom-20 right-4 md:bottom-24 md:right-6 z-50 
+          w-[90vw] md:w-[420px] h-[65vh] md:h-[580px] 
+          bg-white/80 backdrop-blur-xl rounded-3xl 
+          shadow-2xl border border-white/20 
+          flex flex-col overflow-hidden animate-slide-up
+          ring-1 ring-black/5">
+          
+          {/* Header with animated gradient */}
+          <div className="relative bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 p-5 flex items-center gap-4 
+            before:absolute before:inset-0 before:bg-gradient-to-r before:from-violet-500 before:via-purple-500 before:to-pink-500 
+            before:animate-pulse before:opacity-50">
+            <div className="relative w-12 h-12 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-3xl 
+              shadow-inner border border-white/10 animate-bounce-slow">
               🤖
             </div>
-            <div className="flex-1">
-              <h3 className="text-white font-bold text-lg">TaskMate AI</h3>
-              <p className="text-white/80 text-xs flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+            <div className="relative flex-1">
+              <h3 className="text-white font-bold text-xl drop-shadow-md">TaskMate AI</h3>
+              <p className="text-white/90 text-sm flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span>
+                </span>
                 Online • AI Powered
               </p>
             </div>
-            <button
-              onClick={async () => {
-                if (confirm('Clear all chat history? 🗑️')) {
-                  try {
-                    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
-                    const token = localStorage.getItem('access_token');
-                    await fetch(`${backendUrl}/api/chatbot/messages`, {
-                      method: 'DELETE',
-                      headers: {
-                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                      }
-                    });
-                    setMessages([]);
-                  } catch (error) {
-                    console.error('Failed to clear chat:', error);
-                    setMessages([]);
+            <div className="relative flex gap-2">
+              <button
+                onClick={() => {
+                  setMessages([]);
+                  setShowingAllTasks(false);
+                }}
+                className="p-2.5 rounded-xl bg-white/10 backdrop-blur text-white/80 hover:text-white 
+                  hover:bg-white/20 transition-all duration-200 hover:rotate-12"
+                title="New chat"
+              >
+                ✨
+              </button>
+              <button
+                onClick={async () => {
+                  if (confirm('Clear all chat history? 🗑️')) {
+                    try {
+                      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+                      const token = localStorage.getItem('access_token');
+                      await fetch(`${backendUrl}/api/chatbot/messages`, {
+                        method: 'DELETE',
+                        headers: {
+                          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        }
+                      });
+                      setMessages([]);
+                      setShowingAllTasks(false);
+                    } catch (error) {
+                      console.error('Failed to clear chat:', error);
+                      setMessages([]);
+                    }
                   }
-                }
-              }}
-              className="p-2 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-all"
-              title="Clear chat"
-            >
-              🗑️
-            </button>
+                }}
+                className="p-2.5 rounded-xl bg-white/10 backdrop-blur text-white/80 hover:text-white 
+                  hover:bg-white/20 transition-all duration-200 hover:rotate-12"
+                title="Clear chat"
+              >
+                🗑️
+              </button>
+            </div>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-violet-50">
+          {/* Messages Area with beautiful background */}
+          <div className="flex-1 overflow-y-auto p-5 space-y-4 
+            bg-gradient-to-b from-violet-50/50 via-purple-50/30 to-pink-50/50
+            scrollbar-thin scrollbar-thumb-purple-200 scrollbar-track-transparent">
             {messages.length === 0 && (
-              <div className="text-center text-gray-500 py-8 px-4">
-                <div className="text-5xl mb-3">👋</div>
-                <p className="font-bold text-xl text-gray-700">Welcome!</p>
-                <p className="text-sm mt-2 text-gray-500">I'm TaskMate, your task manager assistant!</p>
+              <div className="text-center py-12 px-6">
+                <div className="w-24 h-24 mx-auto mb-5 bg-gradient-to-br from-violet-100 to-pink-100 
+                  rounded-3xl flex items-center justify-center text-5xl shadow-inner">
+                  👋
+                </div>
+                <p className="font-bold text-2xl text-gray-800 mb-2">Welcome! 👋</p>
+                <p className="text-gray-500 mb-6">I'm TaskMate, your AI task assistant!</p>
+                
+                {/* Quick action buttons */}
+                <div className="flex flex-wrap justify-center gap-2">
+                  <button onClick={() => setInputText('Show my tasks')} 
+                    className="px-4 py-2 bg-violet-100 text-violet-700 rounded-xl text-sm font-medium 
+                      hover:bg-violet-200 transition-colors">
+                    📋 Show Tasks
+                  </button>
+                  <button onClick={() => setInputText('Help')} 
+                    className="px-4 py-2 bg-purple-100 text-purple-700 rounded-xl text-sm font-medium 
+                      hover:bg-purple-200 transition-colors">
+                    ❓ Help
+                  </button>
+                  <button onClick={() => setInputText('Add task: ')} 
+                    className="px-4 py-2 bg-pink-100 text-pink-700 rounded-xl text-sm font-medium 
+                      hover:bg-pink-200 transition-colors">
+                    ➕ Add Task
+                  </button>
+                </div>
               </div>
             )}
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} 
+                  animate-fade-in-up`}
               >
+                {/* Avatar for bot */}
+                {message.sender === 'bot' && (
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 
+                    flex items-center justify-center text-lg mr-2 shadow-md flex-shrink-0">
+                    🤖
+                  </div>
+                )}
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                  className={`max-w-[75%] rounded-2xl px-4 py-3 ${
                     message.sender === 'user'
-                      ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
-                      : 'bg-white border border-gray-200 text-gray-800'
+                      ? 'bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30'
+                      : 'bg-white/90 backdrop-blur border border-gray-100 text-gray-800 shadow-md'
                   }`}
                   style={{
-                    borderTopLeftRadius: message.sender === 'bot' ? 4 : 18,
-                    borderTopRightRadius: message.sender === 'user' ? 4 : 18,
+                    borderTopLeftRadius: message.sender === 'bot' ? 4 : 20,
+                    borderTopRightRadius: message.sender === 'user' ? 4 : 20,
+                    borderBottomLeftRadius: 20,
+                    borderBottomRightRadius: 20,
                   }}
                 >
                   <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                   
                   {/* Show "Show More" button for task responses */}
                   {message.sender === 'bot' && (
-                    <div className="mt-2">
+                    <div className="mt-3">
                       {(message.text.includes('others') || message.text.includes('more') || message.text.includes('tasks:')) && !showingAllTasks && (
                         <button
                           onClick={handleShowMoreTasks}
-                          className="text-sm px-3 py-1.5 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition-colors font-medium"
+                          className="text-sm px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-xl 
+                            hover:from-violet-600 hover:to-purple-600 transition-all duration-200 
+                            shadow-lg shadow-purple-500/30 font-medium transform hover:scale-105"
                         >
                           👁️ Show All Tasks
                         </button>
@@ -971,13 +1040,18 @@ export default function ChatBot() {
                 </div>
               </div>
             ))}
+            {/* Typing Indicator */}
             {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white border border-gray-200 rounded-2xl px-4 py-2">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              <div className="flex justify-start animate-fade-in-up">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 
+                  flex items-center justify-center text-lg mr-2 shadow-md">
+                  🤖
+                </div>
+                <div className="bg-white/90 backdrop-blur border border-gray-100 rounded-2xl px-5 py-4 shadow-md">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
                 </div>
               </div>
@@ -985,25 +1059,55 @@ export default function ChatBot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          <div className="p-3 bg-white border-t border-gray-200">
-            <div className="flex gap-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200 text-sm"
-                disabled={isLoading}
-              />
+          {/* Enhanced Input Area */}
+          <div className="p-4 bg-white/80 backdrop-blur border-t border-gray-100">
+            <div className="flex gap-3 items-center">
+              <div className="flex-1 relative">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type your message..."
+                  className="w-full px-5 py-3.5 bg-gray-50/80 backdrop-blur border border-gray-200 
+                    rounded-2xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-100/50 
+                    text-sm transition-all duration-300 shadow-inner"
+                  disabled={isLoading}
+                />
+              </div>
               <button
                 onClick={sendMessage}
                 disabled={!inputText.trim() || isLoading}
-                className="px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl hover:from-violet-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="w-14 h-14 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 
+                  text-white rounded-2xl hover:from-violet-600 hover:via-purple-600 hover:to-pink-600 
+                  disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300 
+                  shadow-lg shadow-purple-500/40 hover:shadow-purple-500/60 
+                  transform hover:scale-105 active:scale-95 flex items-center justify-center text-xl"
               >
-                ➤
+                {isLoading ? (
+                  <span className="animate-spin">⏳</span>
+                ) : (
+                  <span>➤</span>
+                )}
+              </button>
+            </div>
+            {/* Quick suggestions */}
+            <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-thin">
+              <button onClick={() => setInputText('Show my tasks')} 
+                className="px-3 py-1.5 bg-violet-50 text-violet-600 rounded-xl text-xs font-medium 
+                  hover:bg-violet-100 transition-colors whitespace-nowrap">
+                📋 Tasks
+              </button>
+              <button onClick={() => setInputText('Help')} 
+                className="px-3 py-1.5 bg-purple-50 text-purple-600 rounded-xl text-xs font-medium 
+                  hover:bg-purple-100 transition-colors whitespace-nowrap">
+                ❓ Help
+              </button>
+              <button onClick={() => setInputText('Add task: ')} 
+                className="px-3 py-1.5 bg-pink-50 text-pink-600 rounded-xl text-xs font-medium 
+                  hover:bg-pink-100 transition-colors whitespace-nowrap">
+                ➕ Add Task
               </button>
             </div>
           </div>
