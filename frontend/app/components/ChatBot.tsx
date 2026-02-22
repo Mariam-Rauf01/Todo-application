@@ -166,29 +166,29 @@ export default function ChatBot() {
     return () => window.removeEventListener('task-action', handleTaskAction);
   }, []);
 
-  // Detect Roman Urdu - only respond in Roman Urdu if user types in Roman Urdu
+  // Detect Roman Urdu - only respond in Roman Urdu if user types specifically in Roman Urdu
   const isRomanUrdu = (text: string): boolean => {
+    // Only return true if there are clear Urdu words - require at least 2 specific Urdu words
     const romanUrduPatterns = [
-      /kaisa/i, /kaise/i, /kya/i, /kaun/i, /kahaan/i, /kyun/i,
-      /main/i, /tum/i, /woh/i, /yeh/i, /mera/i, /tera/i, /hamara/i,
-      /hai/i, /ho/i, /tha/i, /thi/i, /the/i, /honge/i, /hoga/i, /hogi/i,
-      /jao/i, /aao/i, /dekho/i, /suno/i, /bolo/i, /likho/i, /karo/i, /kijiye/i,
-      /achha/i, /bahut/i, /kam/i, /zyada/i, /theek/i, /galat/i, /sahi/i,
-      /mujhe/i, /tumhe/i, /unhe/i, /isko/i, /usko/i, /iske/i, /uske/i,
-      /aur/i, /ya/i, /lekin/i, /magar/i, /phir/i, /abhi/i, /kabhi/i, /hamesha/i,
-      /kal/i, /aaj/i, /parso/i, /inshaallah/i, /bismillah/i,
-      /shukriya/i, /mashallah/i, /alhamdullillah/i,
-      /kya haal/i, /kya khbr/i, /zaroorat hai/i,
-      /mein/i, /ko/i, /se/i, /pe/i, /ka/i, /ki/i, /ke/i,
-      /haan/i, /nahi/i, /na/i, /ji/i, /zaroor/i, /bilkul/i,
-      /phir bhi/i, /to/i, /koi/i, /kuch/i, /sab/i, /kitna/i, /itna/i, /utna/i,
-      /accha/i, /theek hai/i, /chalega/i, /ho jayega/i,
-      /de do/i, /le lo/i, /kar do/i, /kar denge/i,
-      /salam/i, /asalam/i, /peace/i, /alvida/i, /phir milenge/i,
-      /swaal/i, /jawaab/i, /poochho/i, /batana/i,
+      /\b(kaisa|kaise|kya|kaun|kahaan|kyun)\b/i,
+      /\b(mera|tera|hamara|tumhara|unka|iska|uska)\b/i,
+      /\b(hai|ho|tha|thi|the|honge|hoga|hogi|tha)\b/i,
+      /\b(jao|aao|dekho|suno|bolo|likho|karo|kijiye)\b/i,
+      /\b(mujhe|tumhe|unhe|isko|usko|iske|uske)\b/i,
+      /\b(aur|ya|lekin|magar|phir|abhi|kabhi|hamesha)\b/i,
+      /\b(kal|aaj|parso|inshaallah|bismillah)\b/i,
+      /\b(shukriya|mashallah|alhamdullillah)\b/i,
+      /\b(kya haal|kya khbr|zaroorat hai)\b/i,
+      /\b(haan|nahi|na|ji|zaroor|bilkul)\b/i,
+      /\b(phir bhi|chalega|ho jayega|de do|le lo|kar do)\b/i,
+      /\b(salam|asalam|alvida|phir milenge)\b/i,
+      /\b(swaal|jawaab|poochho|batana)\b/i,
     ];
     const lowerText = text.toLowerCase();
-    return romanUrduPatterns.some(pattern => pattern.test(lowerText));
+    // Count how many patterns match
+    const matchCount = romanUrduPatterns.filter(pattern => pattern.test(lowerText)).length;
+    // Only return true if at least 2 Urdu patterns match
+    return matchCount >= 2;
   };
 
   // Get English response (only use Roman Urdu when user specifically types in Roman Urdu)
@@ -695,42 +695,27 @@ Any other questions? 😊`;
             if (totalTasks === 0) {
               const botMessage: Message = {
                 id: Date.now() + 1,
-                text: isUrdu 
-                  ? "📝 Aapke paas koi task nahi hai!\n\nTask add karne ke liye bolen: 'Add task: Meri task'"
-                  : "📝 You don't have any tasks yet!\n\nTry adding a task like: \"Add task: Buy groceries\"",
+                text: "📝 You don't have any tasks yet!\n\nTry adding a task like: \"Add task: Buy groceries\"",
                 sender: 'bot',
                 timestamp: new Date()
               };
               setMessages(prev => [...prev, botMessage]);
             } else {
-              // Show first 5 tasks with option to see more
-              const displayCount = 5;
-              let taskListText = isUrdu
-                ? `📋 Aapke Tasks (${totalTasks} total):\n\n`
-                : `📋 Your Tasks (${totalTasks} total):\n\n`;
+              // Show all tasks - always in English
+              let taskListText = `📋 Your Tasks (${totalTasks} total):\n\n`;
               
               if (pendingTasks.length > 0) {
-                taskListText += isUrdu ? "⏳ Pending Tasks:\n" : "⏳ Pending Tasks:\n";
-                pendingTasks.slice(0, displayCount).forEach((task: any, index: number) => {
+                taskListText += "⏳ Pending Tasks:\n";
+                pendingTasks.forEach((task: any, index: number) => {
                   taskListText += `${index + 1}. ${task.title}\n`;
                 });
-                if (pendingTasks.length > displayCount) {
-                  taskListText += isUrdu 
-                    ? `... aur ${pendingTasks.length - displayCount} aur tasks\n`
-                    : `... and ${pendingTasks.length - displayCount} more tasks\n`;
-                }
               }
               
               if (completedTasks.length > 0) {
-                taskListText += isUrdu ? "\n✅ Completed Tasks:\n" : "\n✅ Completed Tasks:\n";
-                completedTasks.slice(0, displayCount).forEach((task: any, index: number) => {
+                taskListText += "\n✅ Completed Tasks:\n";
+                completedTasks.forEach((task: any, index: number) => {
                   taskListText += `${index + 1}. ${task.title}\n`;
                 });
-                if (completedTasks.length > displayCount) {
-                  taskListText += isUrdu 
-                    ? `... aur ${completedTasks.length - displayCount} aur tasks\n`
-                    : `... and ${completedTasks.length - displayCount} more tasks\n`;
-                }
               }
               
               const botMessage: Message = {
