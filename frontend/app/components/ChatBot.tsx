@@ -798,7 +798,9 @@ Any other questions? 😊`;
                   // Make sure chat is open to show message
                   setIsOpen(true);
                   
-                  const taskActionResult = `✅ Task updated! "${taskToUpdate.title}" → "${newTitle}"`;
+                  const taskActionResult = isUrdu
+                    ? `✅ Task update ho gaya! "${taskToUpdate.title}" → "${newTitle}"`
+                    : `✅ Task updated! "${taskToUpdate.title}" → "${newTitle}"`;
                   const botMessage: Message = {
                     id: Date.now() + 1,
                     text: taskActionResult,
@@ -818,7 +820,9 @@ Any other questions? 😊`;
         // If no valid update, show instructions
         const botMessage: Message = {
           id: Date.now() + 1,
-          text: "✏️ To update a task, use:\n\n'Update task 1 to new title'\n\nExample: 'Update task 1 to Buy vegetables'\n\nThis will change the task title.",
+          text: isUrdu
+            ? "✏️ Task update karne ke liye:\n\n'Update task 1 to new title'\n\nExample: 'Update task 1 to Buy vegetables'\n\nYe task title change kar dega."
+            : "✏️ To update a task, use:\n\n'Update task 1 to new title'\n\nExample: 'Update task 1 to Buy vegetables'\n\nThis will change the task title.",
           sender: 'bot',
           timestamp: new Date()
         };
@@ -1413,17 +1417,7 @@ Any other questions? 😊`;
               </p>
             </div>
             <div className="relative flex gap-2">
-              <button
-                onClick={() => {
-                  setConfirmModalType('new');
-                  setShowConfirmModal(true);
-                }}
-                className="p-2.5 rounded-xl bg-white/10 backdrop-blur text-white/80 hover:text-white 
-                  hover:bg-white/20 transition-all duration-200 hover:rotate-12"
-                title="New chat"
-              >
-                ✨
-              </button>
+              {/* New chat button removed - keeping chat history */}
               <button
                 onClick={() => {
                   setConfirmModalType('clear');
