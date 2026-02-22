@@ -21,8 +21,39 @@ export default function ChatBot() {
   const [isLoading, setIsLoading] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalType, setConfirmModalType] = useState<'clear' | 'new'>('clear');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Handle confirm modal action
+  const handleConfirmAction = () => {
+    setShowConfirmModal(false);
+    if (confirmModalType === 'clear') {
+      // Clear chat and show welcome
+      setMessages([]);
+      setShowingAllTasks(false);
+      hasLoadedHistory.current = false;
+      const welcomeMessage: Message = {
+        id: Date.now(),
+        text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+    } else if (confirmModalType === 'new') {
+      // New chat
+      setMessages([]);
+      setShowingAllTasks(false);
+      hasLoadedHistory.current = false;
+      const welcomeMessage: Message = {
+        id: Date.now(),
+        text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+    }
+  };
 
   // Load user info on mount
   useEffect(() => {
@@ -49,18 +80,15 @@ export default function ChatBot() {
     }
   }, [isOpen]);
 
-  // Load previous chat history when chat opens (only first time)
+  // Load previous chat history when chat opens (only first time and only if user logged in)
   const hasLoadedHistory = useRef(false);
   useEffect(() => {
     if (isOpen && messages.length === 0 && !hasLoadedHistory.current) {
       hasLoadedHistory.current = true;
-      loadChatHistory();
-    }
-  }, [isOpen]);
-
-  // Add welcome message if no messages
-  useEffect(() => {
-    if (isOpen && messages.length === 0 && hasLoadedHistory.current) {
+      // Don't auto-load old chat history - start fresh each time
+      // loadChatHistory(); // Commented out to stop loading old messages
+      
+      // Show welcome message for new chat
       const welcomeMessage: Message = {
         id: Date.now(),
         text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
@@ -453,6 +481,19 @@ export default function ChatBot() {
            lowerText.includes('good night');
   };
 
+  // Check if message is asking about user identity
+  const isUserIdentityRequest = (text: string): boolean => {
+    const lowerText = text.toLowerCase();
+    return lowerText.includes('who am i') ||
+           lowerText.includes('kon hun') ||
+           lowerText.includes('mein kaun') ||
+           lowerText.includes('mera naam') ||
+           lowerText.includes('mija kaun') ||
+           lowerText.includes('my profile') ||
+           lowerText.includes('profile') ||
+           lowerText.includes('my info');
+  };
+
   // Check if message is asking for help
   const isHelpRequest = (text: string): boolean => {
     const lowerText = text.toLowerCase();
@@ -479,13 +520,21 @@ export default function ChatBot() {
            lowerText.includes('task finished') ||
            lowerText.includes('mark complete') ||
            lowerText.includes('mark done') ||
+           lowerText.includes('incomplete task') ||
+           lowerText.includes('uncomplete task') ||
+           lowerText.includes('mark incomplete') ||
+           lowerText.includes('mark uncomplete') ||
+           lowerText.includes('pending task') ||
            lowerText.includes('delete task') ||
            lowerText.includes('remove task') ||
            lowerText.includes('task delete') ||
            lowerText.includes('task remove') ||
            lowerText.includes('show tasks') ||
            lowerText.includes('my tasks') ||
-           lowerText.includes('list tasks');
+           lowerText.includes('list tasks') ||
+           lowerText.includes('who am i') ||
+           lowerText.includes('profile') ||
+           lowerText.includes('my info');
   };
 
   const sendMessage = async () => {
@@ -505,6 +554,44 @@ export default function ChatBot() {
 
     const lowerMsg = messageToSend.toLowerCase();
     const isUrdu = isRomanUrdu(messageToSend);
+
+    // Check for user identity request - show profile info
+    if (isUserIdentityRequest(messageToSend)) {
+      if (userInfo) {
+        const profileText = isUrdu
+          ? `👤 Aapki Profile:
+
+📛 Name: ${userInfo.name}
+📧 Email: ${userInfo.email}
+
+Koi aur sawaal? 😊`
+          : `👤 Your Profile:
+
+📛 Name: ${userInfo.name}
+📧 Email: ${userInfo.email}
+
+Any other questions? 😊`;
+        const botMessage: Message = {
+          id: Date.now() + 1,
+          text: profileText,
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, botMessage]);
+      } else {
+        const botMessage: Message = {
+          id: Date.now() + 1,
+          text: isUrdu
+            ? "⚠️ Mujhe aapki information nahi mili. Please login karein."
+            : "⚠️ I don't have your information. Please login first.",
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, botMessage]);
+      }
+      setIsLoading(false);
+      return;
+    }
 
     // Check for greetings - respond directly without API call
     if (isGreeting(messageToSend)) {
@@ -586,9 +673,9 @@ export default function ChatBot() {
       lowerMsg.includes('all tasks') ||
       (lowerMsg.includes('task') && !isTaskAddRequest && !isTaskCompleteRequest && !isTaskDeleteRequest);
 
-    // Handle show tasks request - fetch and display tasks with Show More button
+    // Handle show tasks request - show all tasks with clickable buttons
     if (isShowTasksRequest) {
-      setShowingAllTasks(false);
+      setShowingAllTasks(true); // Show all tasks immediately with clickable buttons
       try {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
         const token = localStorage.getItem('access_token');
@@ -844,69 +931,220 @@ export default function ChatBot() {
     // Try to delete task locally
     if (isTaskDeleteRequest) {
       try {
-        const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || 
-                           messageToSend.match(/(\d+)/);
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+        const token = localStorage.getItem('access_token');
+        const userId = localStorage.getItem('user_id');
         
-        if (taskIdMatch) {
-          const taskId = taskIdMatch[1];
-          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
-          const token = localStorage.getItem('access_token');
-          const userId = localStorage.getItem('user_id');
+        if (userId && token) {
+          // Get all tasks
+          const tasksRes = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
           
-          if (userId && token) {
-            const tasksRes = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
+          if (tasksRes.ok) {
+            const allTasks = await tasksRes.json();
+            const pendingTasks = allTasks.filter((t: any) => t.status === 'pending');
+            const completedTasks = allTasks.filter((t: any) => t.status === 'completed');
+            const sortedAllTasks = [...pendingTasks, ...completedTasks];
             
-            if (tasksRes.ok) {
-              const tasks = await tasksRes.json();
-              const sortedTasks = tasks.sort((a: any, b: any) => 
-                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-              );
-              const taskIndex = parseInt(taskId) - 1;
+            // Try to find task by number first
+            const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || 
+                               messageToSend.match(/(\d+)/);
+            
+            let taskToDelete = null;
+            
+            if (taskIdMatch) {
+              // Find by number
+              const taskIndex = parseInt(taskIdMatch[1]) - 1;
+              if (sortedAllTasks[taskIndex]) {
+                taskToDelete = sortedAllTasks[taskIndex];
+              }
+            } else {
+              // Try to find by task name - but require at least 3 characters
+              const taskNameMatch = messageToSend.replace(/delete task:?/i, '')
+                .replace(/remove task:?/i, '')
+                .replace(/task delete:?/i, '')
+                .replace(/task remove:?/i, '')
+                .replace(/please/i, '')
+                .replace(/can you/i, '')
+                .trim();
               
-              if (sortedTasks[taskIndex]) {
-                const taskToDelete = sortedTasks[taskIndex];
-                const deleteRes = await fetch(`${backendUrl}/api/tasks/${taskToDelete.id}`, {
-                  method: 'DELETE',
-                  headers: { 'Authorization': `Bearer ${token}` }
-                });
+              if (taskNameMatch && taskNameMatch.length >= 3) {
+                // Find task by name (exact or close match)
+                taskToDelete = sortedAllTasks.find((t: any) => 
+                  t.title.toLowerCase() === taskNameMatch.toLowerCase() ||
+                  t.title.toLowerCase().startsWith(taskNameMatch.toLowerCase())
+                );
+              }
+            }
+            
+            if (taskToDelete) {
+              const deleteRes = await fetch(`${backendUrl}/api/tasks/${taskToDelete.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              
+              if (deleteRes.ok) {
+                taskActionResult = isUrdu
+                  ? `✅ Task "${taskToDelete.title}" delete ho gaya!`
+                  : `✅ Task "${taskToDelete.title}" has been deleted!`;
+                console.log('✅ Task deleted from chatbot!');
                 
-                if (deleteRes.ok) {
-                  taskActionResult = isUrdu
-                    ? `✅ Task "${taskToDelete.title}" delete ho gaya!`
-                    : `✅ Task "${taskToDelete.title}" has been deleted!`;
-                  console.log('✅ Task deleted from chatbot!');
-                  
-                  // Send bot response and return to avoid duplicate
-                  const botMessage: Message = {
-                    id: Date.now() + 1,
-                    text: taskActionResult,
-                    sender: 'bot',
-                    timestamp: new Date()
-                  };
-                  setMessages(prev => [...prev, botMessage]);
-                  window.dispatchEvent(new CustomEvent('refresh-tasks'));
-                  setIsLoading(false);
-                  return;
+                // Send bot response and return to avoid duplicate
+                const botMessage: Message = {
+                  id: Date.now() + 1,
+                  text: taskActionResult,
+                  sender: 'bot',
+                  timestamp: new Date()
+                };
+                setMessages(prev => [...prev, botMessage]);
+                window.dispatchEvent(new CustomEvent('refresh-tasks'));
+                setIsLoading(false);
+                return;
+              }
+            } else {
+              // Show available tasks
+              if (sortedAllTasks.length > 0) {
+                let taskList = isUrdu
+                  ? "⚠️ Task nahi mila. Yeh aapke tasks hain:\n\n"
+                  : "⚠️ Task not found. Your tasks:\n\n";
+                sortedAllTasks.slice(0, 5).forEach((t: any, i: number) => {
+                  taskList += `${i + 1}. ${t.title} (${t.status})\n`;
+                });
+                if (sortedAllTasks.length > 5) {
+                  taskList += isUrdu ? "... aur bhi hain" : "... and more";
                 }
+                taskActionResult = taskList;
               } else {
                 taskActionResult = isUrdu
-                  ? "⚠️ Task nahi mila. Task number check karein."
-                  : "⚠️ Task not found. Please check the task number.";
+                  ? "⚠️ Koi task nahi hai delete karne ke liye!"
+                  : "⚠️ No tasks to delete!";
               }
             }
           }
-        } else {
-          taskActionResult = isUrdu
-            ? "⚠️ Task number specify karein. Example: 'Delete task 1'"
-            : "⚠️ Please specify the task number. Example: 'Delete task 1'";
         }
       } catch (taskError) {
         console.error('Failed to delete task from chatbot:', taskError);
         taskActionResult = isUrdu
           ? "⚠️ Task delete karne mein error aaya."
           : "⚠️ Error deleting the task.";
+      }
+    }
+
+    // Check for incomplete task request
+    const isTaskIncompleteRequest = 
+      lowerMsg.includes('incomplete task') ||
+      lowerMsg.includes('uncomplete task') ||
+      lowerMsg.includes('mark incomplete') ||
+      lowerMsg.includes('mark uncomplete') ||
+      lowerMsg.includes('pending task') ||
+      lowerMsg.includes('task incomplete') ||
+      lowerMsg.includes('task uncomplete') ||
+      lowerMsg.includes('make incomplete');
+
+    // Try to mark task as incomplete
+    if (isTaskIncompleteRequest) {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+        const token = localStorage.getItem('access_token');
+        const userId = localStorage.getItem('user_id');
+        
+        if (userId && token) {
+          // Get all tasks
+          const tasksRes = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (tasksRes.ok) {
+            const allTasks = await tasksRes.json();
+            const completedTasks = allTasks.filter((t: any) => t.status === 'completed');
+            
+            // Try to find task by number
+            const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || 
+                               messageToSend.match(/(\d+)/);
+            
+            let taskToIncomplete = null;
+            
+            if (taskIdMatch) {
+              // Find by number
+              const taskIndex = parseInt(taskIdMatch[1]) - 1;
+              if (completedTasks[taskIndex]) {
+                taskToIncomplete = completedTasks[taskIndex];
+              }
+            } else {
+              // Try to find by task name - require at least 3 characters
+              const taskNameMatch = messageToSend.replace(/incomplete task:?/i, '')
+                .replace(/uncomplete task:?/i, '')
+                .replace(/mark incomplete:?/i, '')
+                .replace(/mark uncomplete:?/i, '')
+                .replace(/pending task:?/i, '')
+                .replace(/task incomplete:?/i, '')
+                .replace(/make incomplete:?/i, '')
+                .replace(/please/i, '')
+                .replace(/can you/i, '')
+                .trim();
+              
+              if (taskNameMatch && taskNameMatch.length >= 3) {
+                taskToIncomplete = completedTasks.find((t: any) => 
+                  t.title.toLowerCase() === taskNameMatch.toLowerCase() ||
+                  t.title.toLowerCase().startsWith(taskNameMatch.toLowerCase())
+                );
+              }
+            }
+            
+            if (taskToIncomplete) {
+              const updateRes = await fetch(`${backendUrl}/api/tasks/${taskToIncomplete.id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: 'pending' })
+              });
+              
+              if (updateRes.ok) {
+                taskActionResult = isUrdu
+                  ? `✅ Task "${taskToIncomplete.title}" ab pending hai!`
+                  : `✅ Task "${taskToIncomplete.title}" marked as pending!`;
+                console.log('✅ Task marked as incomplete from chatbot!');
+                
+                const botMessage: Message = {
+                  id: Date.now() + 1,
+                  text: taskActionResult,
+                  sender: 'bot',
+                  timestamp: new Date()
+                };
+                setMessages(prev => [...prev, botMessage]);
+                window.dispatchEvent(new CustomEvent('refresh-tasks'));
+                setIsLoading(false);
+                return;
+              }
+            } else {
+              // Show completed tasks
+              if (completedTasks.length > 0) {
+                let taskList = isUrdu
+                  ? "⚠️ Task nahi mila. Yeh aapke completed tasks hain:\n\n"
+                  : "⚠️ Task not found. Your completed tasks:\n\n";
+                completedTasks.slice(0, 5).forEach((t: any, i: number) => {
+                  taskList += `${i + 1}. ${t.title}\n`;
+                });
+                if (completedTasks.length > 5) {
+                  taskList += isUrdu ? "... aur bhi hain" : "... and more";
+                }
+                taskActionResult = taskList;
+              } else {
+                taskActionResult = isUrdu
+                  ? "⚠️ Koi completed task nahi hai!"
+                  : "⚠️ No completed tasks!";
+              }
+            }
+          }
+        }
+      } catch (taskError) {
+        console.error('Failed to mark task as incomplete:', taskError);
+        taskActionResult = isUrdu
+          ? "⚠️ Task incomplete karne mein error aaya."
+          : "⚠️ Error marking task as incomplete.";
       }
     }
 
@@ -998,18 +1236,22 @@ export default function ChatBot() {
           <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 animate-scale-in border border-white/20">
             <div className="text-center">
               {/* Animated Icon */}
-              <div className="w-20 h-20 mx-auto mb-5 bg-gradient-to-br from-red-100 to-orange-100 rounded-full flex items-center justify-center shadow-inner">
-                <span className="text-4xl animate-bounce">⚠️</span>
+              <div className="w-20 h-20 mx-auto mb-5 bg-gradient-to-br from-violet-100 to-purple-100 rounded-full flex items-center justify-center shadow-inner">
+                <span className="text-4xl animate-bounce">
+                  {confirmModalType === 'clear' ? '🗑️' : '✨'}
+                </span>
               </div>
               
-              {/* Title with gradient */}
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent mb-3">
-                Oops!
+              {/* Title */}
+              <h3 className="text-2xl font-bold text-gray-800 mb-3">
+                {confirmModalType === 'clear' ? 'Clear Chat?' : 'New Chat?'}
               </h3>
               
               {/* Description */}
               <p className="text-gray-600 mb-8 leading-relaxed">
-                I didn't understand that. Would you like to reload the page and try again?
+                {confirmModalType === 'clear' 
+                  ? 'This will clear all chat messages. Are you sure?'
+                  : 'This will start a fresh chat. Continue?'}
               </p>
               
               {/* Buttons with glass effect */}
@@ -1021,10 +1263,10 @@ export default function ChatBot() {
                   ✕ Cancel
                 </button>
                 <button
-                  onClick={handleConfirmReload}
-                  className="flex-1 px-6 py-3.5 bg-gradient-to-r from-red-500 via-orange-500 to-red-500 text-white rounded-2xl font-semibold hover:from-red-600 hover:via-orange-600 hover:to-red-600 transition-all duration-300 shadow-lg shadow-orange-500/40 hover:shadow-orange-500/60 transform hover:scale-[1.02]"
+                  onClick={handleConfirmAction}
+                  className="flex-1 px-6 py-3.5 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 text-white rounded-2xl font-semibold hover:from-violet-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg shadow-purple-500/40 hover:shadow-purple-500/60 transform hover:scale-[1.02]"
                 >
-                  🔄 Reload
+                  {confirmModalType === 'clear' ? '🗑️ Clear' : '✨ New Chat'}
                 </button>
               </div>
             </div>
@@ -1081,8 +1323,8 @@ export default function ChatBot() {
             <div className="relative flex gap-2">
               <button
                 onClick={() => {
-                  setMessages([]);
-                  setShowingAllTasks(false);
+                  setConfirmModalType('new');
+                  setShowConfirmModal(true);
                 }}
                 className="p-2.5 rounded-xl bg-white/10 backdrop-blur text-white/80 hover:text-white 
                   hover:bg-white/20 transition-all duration-200 hover:rotate-12"
@@ -1091,24 +1333,9 @@ export default function ChatBot() {
                 ✨
               </button>
               <button
-                onClick={async () => {
-                  if (confirm('Clear all chat history? 🗑️')) {
-                    try {
-                      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
-                      const token = localStorage.getItem('access_token');
-                      await fetch(`${backendUrl}/api/chatbot/messages`, {
-                        method: 'DELETE',
-                        headers: {
-                          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                        }
-                      });
-                      setMessages([]);
-                      setShowingAllTasks(false);
-                    } catch (error) {
-                      console.error('Failed to clear chat:', error);
-                      setMessages([]);
-                    }
-                  }
+                onClick={() => {
+                  setConfirmModalType('clear');
+                  setShowConfirmModal(true);
                 }}
                 className="p-2.5 rounded-xl bg-white/10 backdrop-blur text-white/80 hover:text-white 
                   hover:bg-white/20 transition-all duration-200 hover:rotate-12"
