@@ -293,6 +293,9 @@ export default function ChatBot() {
   const [showingAllTasks, setShowingAllTasks] = useState(false);
   const [displayedTaskCount, setDisplayedTaskCount] = useState(5);
 
+  // State to track all tasks for clickable actions
+  const [allTasksData, setAllTasksData] = useState<any[]>([]);
+
   // Function to fetch and display tasks with clickable "show more"
   const handleShowMoreTasks = async () => {
     try {
@@ -313,8 +316,12 @@ export default function ChatBot() {
         const pendingTasks = tasks.filter((t: any) => t.status === 'pending');
         const completedTasks = tasks.filter((t: any) => t.status === 'completed');
         
+        // Store all tasks for clickable actions
+        const sortedAllTasks = [...pendingTasks, ...completedTasks];
+        setAllTasksData(sortedAllTasks);
+        
         // Build the task list message
-        let taskListText = "📋 Your Tasks:\n\n";
+        let taskListText = "📋 Your All Tasks (Click to complete):\n\n";
         
         if (pendingTasks.length > 0) {
           taskListText += "⏳ Pending Tasks:\n";
@@ -347,6 +354,76 @@ export default function ChatBot() {
       }
     } catch (error) {
       console.error('Failed to load more tasks:', error);
+    }
+  };
+
+  // Function to complete a task from clickable button
+  const handleCompleteTaskFromChat = async (taskId: number, taskTitle: string) => {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+      const token = localStorage.getItem('access_token');
+      
+      if (!token) return;
+      
+      const response = await fetch(`${backendUrl}/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: 'completed' })
+      });
+      
+      if (response.ok) {
+        const botMessage: Message = {
+          id: Date.now(),
+          text: `✅ Task "${taskTitle}" completed successfully! 🎉`,
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, botMessage]);
+        window.dispatchEvent(new CustomEvent('refresh-tasks'));
+        
+        // Update local tasks data
+        setAllTasksData(prev => prev.map(t => 
+          t.id === taskId ? { ...t, status: 'completed' } : t
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to complete task:', error);
+    }
+  };
+
+  // Function to delete a task from clickable button
+  const handleDeleteTaskFromChat = async (taskId: number, taskTitle: string) => {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+      const token = localStorage.getItem('access_token');
+      
+      if (!token) return;
+      
+      const response = await fetch(`${backendUrl}/api/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const botMessage: Message = {
+          id: Date.now(),
+          text: `🗑️ Task "${taskTitle}" deleted!`,
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, botMessage]);
+        window.dispatchEvent(new CustomEvent('refresh-tasks'));
+        
+        // Update local tasks data
+        setAllTasksData(prev => prev.filter(t => t.id !== taskId));
+      }
+    } catch (error) {
+      console.error('Failed to delete task:', error);
     }
   };
 
@@ -457,9 +534,18 @@ export default function ChatBot() {
       return;
     }
 
-    // Check if it's NOT a task command - show modern confirm modal instead of old alert
+    // Check if it's NOT a task command - show message in chat instead of popup
     if (!isTaskCommand(messageToSend)) {
-      setShowConfirmModal(true);
+      // Show message in chat instead of popup
+      const botMessage: Message = {
+        id: Date.now() + 1,
+        text: isUrdu
+          ? "🤔 Samajh nahi aaya!\n\nMein sirf tasks manage kar sakta hoon.\n\nKuch yeh try karein:\n• 'Add task: Meri task'\n• 'Show my tasks'\n• 'Complete task 1'\n• 'Delete task 1'"
+          : "🤔 I didn't understand that!\n\nI can only help you manage tasks.\n\nTry these:\n• 'Add task: My task'\n• 'Show my tasks'\n• 'Complete task 1'\n• 'Delete task 1'",
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botMessage]);
       setIsLoading(false);
       return;
     }
@@ -594,6 +680,11 @@ export default function ChatBot() {
           .replace(/i need to/i, '')
           .trim();
         
+        // Also handle just "add" followed by title
+        if (!taskTitle && lowerMsg.startsWith('add ')) {
+          taskTitle = lowerMsg.replace(/^add\s+/i, '').trim();
+        }
+        
         if (taskTitle && taskTitle.length > 0) {
           const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
           const token = localStorage.getItem('access_token');
@@ -618,9 +709,21 @@ export default function ChatBot() {
             
             if (res.ok) {
               taskActionResult = isUrdu 
-                ? "✅ Task successfully created!"
-                : "✅ Task successfully created!";
+                ? `✅ Task "${taskTitle}" successfully created!`
+                : `✅ Task "${taskTitle}" successfully created!`;
               console.log('✅ Task created from chatbot!');
+              
+              // Send bot response and return to avoid duplicate
+              const botMessage: Message = {
+                id: Date.now() + 1,
+                text: taskActionResult,
+                sender: 'bot',
+                timestamp: new Date()
+              };
+              setMessages(prev => [...prev, botMessage]);
+              window.dispatchEvent(new CustomEvent('refresh-tasks'));
+              setIsLoading(false);
+              return;
             }
           }
         }
@@ -632,56 +735,103 @@ export default function ChatBot() {
     // Try to complete task locally
     if (isTaskCompleteRequest) {
       try {
-        const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || 
-                           messageToSend.match(/(\d+)/);
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+        const token = localStorage.getItem('access_token');
+        const userId = localStorage.getItem('user_id');
         
-        if (taskIdMatch) {
-          const taskId = taskIdMatch[1];
-          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
-          const token = localStorage.getItem('access_token');
-          const userId = localStorage.getItem('user_id');
+        if (userId && token) {
+          // Get all tasks
+          const tasksRes = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
           
-          if (userId && token) {
-            // First get the tasks to find the correct task ID
-            const tasksRes = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
+          if (tasksRes.ok) {
+            const allTasks = await tasksRes.json();
+            const pendingTasks = allTasks.filter((t: any) => t.status === 'pending');
+            const sortedTasks = pendingTasks.sort((a: any, b: any) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
             
-            if (tasksRes.ok) {
-              const tasks = await tasksRes.json();
-              const sortedTasks = tasks.sort((a: any, b: any) => 
-                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-              );
-              const taskIndex = parseInt(taskId) - 1;
-              
+            // Try to find task by number first
+            const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || 
+                               messageToSend.match(/(\d+)/);
+            
+            let taskToComplete = null;
+            
+            if (taskIdMatch) {
+              // Find by number
+              const taskIndex = parseInt(taskIdMatch[1]) - 1;
               if (sortedTasks[taskIndex]) {
-                const taskToComplete = sortedTasks[taskIndex];
-                const updateRes = await fetch(`${backendUrl}/api/tasks/${taskToComplete.id}`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                  },
-                  body: JSON.stringify({ status: 'completed' })
-                });
+                taskToComplete = sortedTasks[taskIndex];
+              }
+            } else {
+              // Try to find by task name
+              const taskNameMatch = messageToSend.replace(/complete task:?/i, '')
+                .replace(/finish task:?/i, '')
+                .replace(/mark complete:?/i, '')
+                .replace(/done task:?/i, '')
+                .replace(/task complete:?/i, '')
+                .replace(/task done:?/i, '')
+                .replace(/please/i, '')
+                .replace(/can you/i, '')
+                .trim();
+              
+              if (taskNameMatch) {
+                // Find task by name (partial match)
+                taskToComplete = sortedTasks.find((t: any) => 
+                  t.title.toLowerCase().includes(taskNameMatch.toLowerCase())
+                );
+              }
+            }
+            
+            if (taskToComplete) {
+              const updateRes = await fetch(`${backendUrl}/api/tasks/${taskToComplete.id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: 'completed' })
+              });
+              
+              if (updateRes.ok) {
+                taskActionResult = isUrdu
+                  ? `✅ Task "${taskToComplete.title}" completed! Great job! 🎉`
+                  : `✅ Task "${taskToComplete.title}" completed! Great job! 🎉`;
+                console.log('✅ Task completed from chatbot!');
                 
-                if (updateRes.ok) {
-                  taskActionResult = isUrdu
-                    ? `✅ Task "${taskToComplete.title}" completed! Great job! 🎉`
-                    : `✅ Task "${taskToComplete.title}" completed! Great job! 🎉`;
-                  console.log('✅ Task completed from chatbot!');
+                // Send bot response and return to avoid duplicate
+                const botMessage: Message = {
+                  id: Date.now() + 1,
+                  text: taskActionResult,
+                  sender: 'bot',
+                  timestamp: new Date()
+                };
+                setMessages(prev => [...prev, botMessage]);
+                window.dispatchEvent(new CustomEvent('refresh-tasks'));
+                setIsLoading(false);
+                return;
+              }
+            } else {
+              // Show available pending tasks
+              if (sortedTasks.length > 0) {
+                let taskList = isUrdu
+                  ? "⚠️ Task nahi mila. Yeh aapke pending tasks hain:\n\n"
+                  : "⚠️ Task not found. Your pending tasks:\n\n";
+                sortedTasks.slice(0, 5).forEach((t: any, i: number) => {
+                  taskList += `${i + 1}. ${t.title}\n`;
+                });
+                if (sortedTasks.length > 5) {
+                  taskList += isUrdu ? "... aur bhi hain" : "... and more";
                 }
+                taskActionResult = taskList;
               } else {
                 taskActionResult = isUrdu
-                  ? "⚠️ Task nahi mila. Task number check karein."
-                  : "⚠️ Task not found. Please check the task number.";
+                  ? "⚠️ Koi pending task nahi hai!"
+                  : "⚠️ No pending tasks!";
               }
             }
           }
-        } else {
-          taskActionResult = isUrdu
-            ? "⚠️ Task number specify karein. Example: 'Complete task 1'"
-            : "⚠️ Please specify the task number. Example: 'Complete task 1'";
         }
       } catch (taskError) {
         console.error('Failed to complete task from chatbot:', taskError);
@@ -727,6 +877,18 @@ export default function ChatBot() {
                     ? `✅ Task "${taskToDelete.title}" delete ho gaya!`
                     : `✅ Task "${taskToDelete.title}" has been deleted!`;
                   console.log('✅ Task deleted from chatbot!');
+                  
+                  // Send bot response and return to avoid duplicate
+                  const botMessage: Message = {
+                    id: Date.now() + 1,
+                    text: taskActionResult,
+                    sender: 'bot',
+                    timestamp: new Date()
+                  };
+                  setMessages(prev => [...prev, botMessage]);
+                  window.dispatchEvent(new CustomEvent('refresh-tasks'));
+                  setIsLoading(false);
+                  return;
                 }
               } else {
                 taskActionResult = isUrdu
@@ -873,9 +1035,9 @@ export default function ChatBot() {
       {/* Chat Toggle Button - Enhanced with glow effect */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-6 right-6 z-50 w-16 h-16 md:w-18 md:h-18 
+        className={`fixed bottom-6 right-6 z-50 w-12 h-12 md:w-14 md:h-14 
           bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 
-          rounded-full flex items-center justify-center text-white text-2xl md:text-3xl 
+          rounded-full flex items-center justify-center text-white text-xl md:text-2xl 
           shadow-lg shadow-purple-500/50 hover:shadow-purple-500/80 
           transition-all duration-300 transform hover:scale-110 hover:rotate-12
           ${isOpen ? 'rotate-90' : 'animate-pulse-slow'}
@@ -883,7 +1045,7 @@ export default function ChatBot() {
         aria-label="Toggle chatbot"
       >
         {isOpen ? (
-          <span className="text-xl transform hover:scale-125 transition-transform">✕</span>
+          <span className="text-lg transform hover:scale-125 transition-transform">✕</span>
         ) : (
           <span className="transform hover:scale-125 transition-transform">💬</span>
         )}
@@ -892,8 +1054,8 @@ export default function ChatBot() {
       {/* Chat Window - Enhanced with glass morphism */}
       {isOpen && (
         <div className="fixed bottom-20 right-4 md:bottom-24 md:right-6 z-50 
-          w-[90vw] md:w-[420px] h-[65vh] md:h-[580px] 
-          bg-white/80 backdrop-blur-xl rounded-3xl 
+          w-[90vw] md:w-80 h-[55vh] md:h-[450px] 
+          bg-white/90 backdrop-blur-xl rounded-2xl 
           shadow-2xl border border-white/20 
           flex flex-col overflow-hidden animate-slide-up
           ring-1 ring-black/5">
@@ -1020,7 +1182,7 @@ export default function ChatBot() {
                   
                   {/* Show "Show More" button for task responses */}
                   {message.sender === 'bot' && (
-                    <div className="mt-3">
+                    <div className="mt-3 space-y-2">
                       {(message.text.includes('others') || message.text.includes('more') || message.text.includes('tasks:')) && !showingAllTasks && (
                         <button
                           onClick={handleShowMoreTasks}
@@ -1030,6 +1192,32 @@ export default function ChatBot() {
                         >
                           👁️ Show All Tasks
                         </button>
+                      )}
+                      
+                      {/* Show clickable task buttons when showing all tasks */}
+                      {showingAllTasks && allTasksData.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {allTasksData.slice(0, 10).map((task: any, index: number) => (
+                            task.status === 'pending' && (
+                              <div key={task.id} className="flex gap-1">
+                                <button
+                                  onClick={() => handleCompleteTaskFromChat(task.id, task.title)}
+                                  className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                                  title="Complete task"
+                                >
+                                  ✅ {index + 1}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTaskFromChat(task.id, task.title)}
+                                  className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                                  title="Delete task"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            )
+                          ))}
+                        </div>
                       )}
                     </div>
                   )}
