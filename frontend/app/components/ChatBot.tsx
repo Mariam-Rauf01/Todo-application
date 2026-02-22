@@ -1035,7 +1035,7 @@ export default function ChatBot() {
       {/* Chat Toggle Button - Enhanced with glow effect */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-6 right-6 z-50 w-12 h-12 md:w-14 md:h-14 
+        className={`fixed bottom-6 right-6 z-50 w-14 h-14 md:w-16 md:h-16 
           bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 
           rounded-full flex items-center justify-center text-white text-xl md:text-2xl 
           shadow-lg shadow-purple-500/50 hover:shadow-purple-500/80 
@@ -1054,7 +1054,7 @@ export default function ChatBot() {
       {/* Chat Window - Enhanced with glass morphism */}
       {isOpen && (
         <div className="fixed bottom-20 right-4 md:bottom-24 md:right-6 z-50 
-          w-[90vw] md:w-80 h-[55vh] md:h-[450px] 
+          w-[90vw] md:w-96 h-[60vh] md:h-[500px] 
           bg-white/90 backdrop-blur-xl rounded-2xl 
           shadow-2xl border border-white/20 
           flex flex-col overflow-hidden animate-slide-up
