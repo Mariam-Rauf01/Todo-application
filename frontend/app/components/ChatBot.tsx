@@ -20,6 +20,7 @@ export default function ChatBot() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -62,7 +63,7 @@ export default function ChatBot() {
     if (isOpen && messages.length === 0 && hasLoadedHistory.current) {
       const welcomeMessage: Message = {
         id: Date.now(),
-        text: "👋 Assalamu alaykum! Welcome to TaskMate AI!\n\nI'm your personal task manager assistant.\n\nHow can I help you today? 😊",
+        text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
         sender: 'bot',
         timestamp: new Date()
       };
@@ -94,11 +95,10 @@ export default function ChatBot() {
           timestamp: new Date(msg.created_at)
         }));
         
-        // Add welcome message at the start if no messages loaded
         if (loadedMessages.length === 0) {
           const welcomeMessage: Message = {
             id: Date.now(),
-            text: "👋 Assalamu alaykum! Welcome to TaskMate AI!\n\nI'm your personal task manager assistant.\n\nHow can I help you today? 😊",
+            text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
             sender: 'bot',
             timestamp: new Date()
           };
@@ -109,10 +109,9 @@ export default function ChatBot() {
       }
     } catch (error) {
       console.error('Failed to load chat history:', error);
-      // Show welcome message on error
       const welcomeMessage: Message = {
         id: Date.now(),
-        text: "👋 Assalamu alaykum! Welcome to TaskMate AI!\n\nI'm your personal task manager assistant.\n\nHow can I help you today? 😊",
+        text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
         sender: 'bot',
         timestamp: new Date()
       };
@@ -139,7 +138,7 @@ export default function ChatBot() {
     return () => window.removeEventListener('task-action', handleTaskAction);
   }, []);
 
-  // Detect Roman Urdu
+  // Detect Roman Urdu - only respond in Roman Urdu if user types in Roman Urdu
   const isRomanUrdu = (text: string): boolean => {
     const romanUrduPatterns = [
       /kaisa/i, /kaise/i, /kya/i, /kaun/i, /kahaan/i, /kyun/i,
@@ -158,94 +157,258 @@ export default function ChatBot() {
       /accha/i, /theek hai/i, /chalega/i, /ho jayega/i,
       /de do/i, /le lo/i, /kar do/i, /kar denge/i,
       /salam/i, /asalam/i, /peace/i, /alvida/i, /phir milenge/i,
+      /swaal/i, /jawaab/i, /poochho/i, /batana/i,
     ];
     const lowerText = text.toLowerCase();
     return romanUrduPatterns.some(pattern => pattern.test(lowerText));
   };
 
-  // Bot response logic with Roman Urdu support
-  const getBotResponse = (userInput: string): string => {
+  // Get English response (only use Roman Urdu when user specifically types in Roman Urdu)
+  const getEnglishResponse = (userInput: string): string => {
     const lowerInput = userInput.toLowerCase();
-    const isUrdu = isRomanUrdu(userInput);
+    
+    // User identity check
+    if (lowerInput.includes('who am i') || lowerInput.includes('identify')) {
+      if (userInfo) {
+        return `📋 Your information:\n\n👤 Name: ${userInfo.name}\n📧 Email: ${userInfo.email}\n\nAny other questions?`;
+      } else {
+        return "⚠️ I don't have your information. Please login first and try again.";
+      }
+    }
+    
+    // Greetings
+    if (lowerInput.includes('hello') || lowerInput.includes('hi') || lowerInput.includes('hey')) {
+      return "Hello! 👋 Welcome to TaskMate AI!\n\nHow can I help you today?";
+    }
+    
+    // Help
+    if (lowerInput.includes('help') || lowerInput.includes('guide')) {
+      return `🤖 TaskMate AI - Help\n\nI can help you with:\n\n✅ Adding new tasks\n✅ Viewing your tasks\n✅ Completing tasks\n✅ Deleting tasks\n\nExamples:\n• "Add task: Buy groceries"\n• "Show all my tasks"\n• "Complete task 1"\n• "Delete task 2"\n\nWhat would you like to do?`;
+    }
+    
+    // Tasks
+    if (lowerInput.includes('task') || lowerInput.includes('work') || lowerInput.includes('todolist')) {
+      return "📝 Need help with tasks?\n\nYou can tell me:\n• 'Add task: Buy groceries'\n• 'Show all my tasks'\n• 'Complete task 1'\n• 'Delete task 2'\n\nWhat task would you like to add?";
+    }
+    
+    // Thank you
+    if (lowerInput.includes('thank') || lowerInput.includes('appreciate')) {
+      return "😊 You're welcome! Happy to help!\n\nFeel free to ask if you have any more questions!";
+    }
+    
+    // How are you
+    if (lowerInput.includes('how are')) {
+      return "😊 I'm doing great, thank you!\n\nHow are you? How can I help you today?";
+    }
+    
+    // What's your name
+    if (lowerInput.includes('your name') || lowerInput.includes('who are you')) {
+      return "🤖 My name is TaskMate AI!\n\nI'm here to help you manage your tasks!\n\nYou can ask me to add, view, complete, or delete tasks!";
+    }
+    
+    // Goodbye
+    if (lowerInput.includes('bye') || lowerInput.includes('goodbye') || lowerInput.includes('see you later')) {
+      return "👋 Goodbye! See you later!\n\nTake care! 🫡";
+    }
+    
+    // Default response in English
+    return "I understand! I'm here to help you manage your tasks!\n\nYou can ask me to:\n• Add a new task\n• Show your tasks\n• Complete a task\n• Delete a task\n• Get help\n\nWhat would you like to do?";
+  };
+
+  // Get Roman Urdu response (only when user types in Roman Urdu)
+  const getRomanUrduResponse = (userInput: string): string => {
+    const lowerInput = userInput.toLowerCase();
     
     // User identity check
     if (lowerInput.includes('who am i') || lowerInput.includes('kon hun') || 
         lowerInput.includes('mein kaun') || lowerInput.includes('mera naam') ||
-        lowerInput.includes('identify') || lowerInput.includes('mija kaun')) {
+        lowerInput.includes('mija kaun')) {
       if (userInfo) {
-        return isUrdu 
-          ? `📋 Aapki information:\n\n👤 Name: ${userInfo.name}\n📧 Email: ${userInfo.email}\n\nKoi aur sawaal? 😊`
-          : `📋 Your information:\n\n👤 Name: ${userInfo.name}\n📧 Email: ${userInfo.email}\n\nAny other questions? 😊`;
+        return `📋 Aapki information:\n\n👤 Name: ${userInfo.name}\n📧 Email: ${userInfo.email}\n\nKoi aur sawaal? 😊`;
       } else {
-        return isUrdu 
-          ? "⚠️ Mujhe aapki information nahi mili. Please login karein phir try karein."
-          : "⚠️ I don't have your information. Please login first and try again.";
+        return "⚠️ Mujhe aapki information nahi mili. Please login karein.";
       }
     }
     
     // Greetings
     if (lowerInput.includes('hello') || lowerInput.includes('hi') || 
         lowerInput.includes('hey') || lowerInput.includes('salam') ||
-        lowerInput.includes('asalam') || lowerInput.includes('peace') ||
-        lowerInput.includes('greetings')) {
-      return "👋 Assalamu alaykum!\n\nHello! Welcome to TaskMate AI! 😊\n\nHow can I assist you today?\n\nAap ki tareh kar sakta hoon?";
+        lowerInput.includes('asalam') || lowerInput.includes('peace')) {
+      return "👋 Assalamu alaykum!\n\nWelcome to TaskMate AI! 😊\n\nAap ki tareh kar sakta hoon?";
     }
     
     // Help
     if (lowerInput.includes('help') || lowerInput.includes('madad') || 
         lowerInput.includes('sahayata') || lowerInput.includes('guide')) {
-      return isUrdu
-        ? `🤖 TaskMate AI - Help Guide\n\nMein aapki in cheezon mein madad kar sakta hoon:\n\n✅ Tasks add karna\n✅ Tasks dekhna\n✅ Tasks complete karna\n✅ Tasks delete karna\n\nExamples:\n• "Add task: Groceries le aana 🛒"\n• "Meri sari tasks dikhao"\n• "Task 1 complete kar do ✅"\n\nKya karna chahte hain? 😊`
-        : `🤖 TaskMate AI - Help Guide\n\nI can help you with:\n\n✅ Adding new tasks\n✅ Viewing your tasks\n✅ Completing tasks\n✅ Deleting tasks\n\nExamples:\n• "Add task: Buy groceries 🛒"\n• "Show all my tasks"\n• "Complete task 1 ✅"\n\nWhat would you like to do? 😊`;
+      return `🤖 TaskMate AI - Help\n\nMein aapki in cheezon mein madad kar sakta hoon:\n\n✅ Tasks add karna\n✅ Tasks dekhna\n✅ Tasks complete karna\n✅ Tasks delete karna\n\nExamples:\n• "Add task: Groceries le aana"\n• "Meri sari tasks dikhao"\n• "Task 1 complete kar do"\n\nKya karna chahte hain? 😊`;
     }
     
     // Tasks
     if (lowerInput.includes('task') || lowerInput.includes('kaam') || 
         lowerInput.includes('work') || lowerInput.includes('todolist')) {
-      return isUrdu
-        ? "📝 Tasks ke baare mein madad chahiye?\n\nAap mujhe bol sakte hain:\n• 'Add task: Groceries le aana'\n• 'Meri sari tasks dikhao'\n• 'Task 1 complete kar do'\n• 'Task 2 delete kar do'\n\nKaisa task add karna chahte hain? 😊"
-        : "📝 Need help with tasks?\n\nYou can tell me:\n• 'Add task: Buy groceries'\n• 'Show all my tasks'\n• 'Complete task 1'\n• 'Delete task 2'\n\nWhat task would you like to add? 😊";
+      return "📝 Tasks ke baare mein madad chahiye?\n\nAap mujhe bol sakte hain:\n• 'Add task: Groceries le aana'\n• 'Meri sari tasks dikhao'\n• 'Task 1 complete kar do'\n• 'Task 2 delete kar do'\n\nKaisa task add karna chahte hain? 😊";
     }
     
     // Thank you
     if (lowerInput.includes('thank') || lowerInput.includes('shukriya') || 
         lowerInput.includes('shukria') || lowerInput.includes('appreciate')) {
-      return isUrdu
-        ? "😊 Aapka shukriya! Khush hua madad kar ke!\n\nKoi aur sawaal ho to zaroor puchiye!"
-        : "😊 You're welcome! Happy to help!\n\nFeel free to ask if you have any more questions!";
+      return "😊 Aapka shukriya! Khush hua madad kar ke!\n\nKoi aur sawaal ho to zaroor puchiye!";
     }
     
     // How are you
     if (lowerInput.includes('how are') || lowerInput.includes('kaisa hai') || 
         lowerInput.includes('kaisi hai') || lowerInput.includes('kya haal') ||
         lowerInput.includes('kya khbr')) {
-      return isUrdu
-        ? "😊 Main theek hoon, shukriya! ☺️\n\nAap kais? Aapki kya help chahiye?"
-        : "😊 I'm doing great, thank you! ☺️\n\nHow are you? How can I help you today?";
+      return "😊 Main theek hoon, shukriya! ☺️\n\nAap kais? Aapki kya help chahiye?";
     }
     
     // What's your name
     if (lowerInput.includes('your name') || lowerInput.includes('tumhara naam') || 
         lowerInput.includes('aap ka naam') || lowerInput.includes('who are you') ||
         lowerInput.includes('kon ho')) {
-      return isUrdu
-        ? "🤖 Mera naam TaskMate AI hai!\n\nMain aapki task management mein madad karne ke liye hoon. 😊\n\nAap mujhe tasks add karne, dekhne, complete karne aur delete karne ke liye bol sakte hain!"
-        : "🤖 My name is TaskMate AI!\n\nI'm here to help you manage your tasks! 😊\n\nYou can ask me to add, view, complete, or delete tasks!";
+      return "🤖 Mera naam TaskMate AI hai!\n\nMain aapki task management mein madad karne ke liye hoon. 😊\n\nAap mujhe tasks add karne, dekhne, complete karne aur delete karne ke liye bol sakte hain!";
     }
     
     // Goodbye
     if (lowerInput.includes('bye') || lowerInput.includes('goodbye') || 
         lowerInput.includes('alvida') || lowerInput.includes('phir milenge') ||
         lowerInput.includes('see you later')) {
-      return isUrdu
-        ? "👋 Alvida! Phir milenge! 😊\n\nAllah hafiz! 🫡"
-        : "👋 Goodbye! See you later! 😊\n\nTake care! 🫡";
+      return "👋 Alvida! Phir milenge! 😊\n\nAllah hafiz! 🫡";
     }
     
-    // Default response
-    return isUrdu
-      ? "🤔 Samajh gaya! Main yahan task management mein madad ke liye hoon. 😊\n\nAap mujhe ye bol sakte hain:\n• Task add karna\n• Meri tasks dikhana\n• Task complete karna\n• Task delete karna\n• Help chahiye\n\nAap kya karna chahte hain?"
-      : "🤔 I understand! I'm here to help you manage your tasks! 😊\n\nYou can ask me to:\n• Add a new task\n• Show your tasks\n• Complete a task\n• Delete a task\n• Get help\n\nWhat would you like to do?";
+    // Default response in Roman Urdu
+    return "🤔 Samajh gaya! Main yahan task management mein madad ke liye hoon. 😊\n\nAap mujhe ye bol sakte hain:\n• Task add karna\n• Meri tasks dikhana\n• Task complete karna\n• Task delete karna\n• Help chahiye\n\nAap kya karna chahte hain?";
+  };
+
+  // Bot response logic - use Roman Urdu only when user types in Roman Urdu
+  const getBotResponse = (userInput: string): string => {
+    const isUrdu = isRomanUrdu(userInput);
+    if (isUrdu) {
+      return getRomanUrduResponse(userInput);
+    }
+    return getEnglishResponse(userInput);
+  };
+
+  // State to track if we're showing limited tasks
+  const [showingAllTasks, setShowingAllTasks] = useState(false);
+  const [displayedTaskCount, setDisplayedTaskCount] = useState(5);
+
+  // Function to fetch and display tasks with clickable "show more"
+  const handleShowMoreTasks = async () => {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+      const token = localStorage.getItem('access_token');
+      const userId = localStorage.getItem('user_id');
+      
+      if (!userId || !token) {
+        return;
+      }
+      
+      const response = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const tasks = await response.json();
+        const pendingTasks = tasks.filter((t: any) => t.status === 'pending');
+        const completedTasks = tasks.filter((t: any) => t.status === 'completed');
+        
+        // Build the task list message
+        let taskListText = "📋 Your Tasks:\n\n";
+        
+        if (pendingTasks.length > 0) {
+          taskListText += "⏳ Pending Tasks:\n";
+          pendingTasks.forEach((task: any, index: number) => {
+            taskListText += `${index + 1}. ${task.title}\n`;
+          });
+          taskListText += "\n";
+        }
+        
+        if (completedTasks.length > 0) {
+          taskListText += "✅ Completed Tasks:\n";
+          completedTasks.forEach((task: any, index: number) => {
+            taskListText += `${index + 1}. ${task.title}\n`;
+          });
+        }
+        
+        if (pendingTasks.length === 0 && completedTasks.length === 0) {
+          taskListText = "📝 You don't have any tasks yet!\n\nTry adding a task like: \"Add task: Buy groceries\"";
+        }
+        
+        // Add bot message with all tasks
+        const botMessage: Message = {
+          id: Date.now(),
+          text: taskListText,
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, botMessage]);
+        setShowingAllTasks(true);
+      }
+    } catch (error) {
+      console.error('Failed to load more tasks:', error);
+    }
+  };
+
+  // Function to check if message contains task count and return clickable version
+  const processTaskResponse = (text: string, taskCount: number): { text: string; showMore: boolean } => {
+    if (taskCount > 5) {
+      return {
+        text: text.replace(/\d+ others/, `${taskCount - 5} others`).replace(/and \d+ more/, `and ${taskCount - 5} more`),
+        showMore: true
+      };
+    }
+    return { text, showMore: false };
+  };
+
+  // Check if message is a greeting
+  const isGreeting = (text: string): boolean => {
+    const lowerText = text.toLowerCase();
+    return lowerText.includes('hi') || 
+           lowerText.includes('hello') || 
+           lowerText.includes('hey') ||
+           lowerText.includes('salam') ||
+           lowerText.includes('asalam') ||
+           lowerText.includes('peace') ||
+           lowerText.includes('assalam') ||
+           lowerText.includes('good morning') ||
+           lowerText.includes('good evening') ||
+           lowerText.includes('good night');
+  };
+
+  // Check if message is asking for help
+  const isHelpRequest = (text: string): boolean => {
+    const lowerText = text.toLowerCase();
+    return lowerText.includes('help') || 
+           lowerText.includes('guide') ||
+           lowerText.includes('what can you do') ||
+           lowerText.includes('how do you work');
+  };
+
+  // Check if message is a valid task command
+  const isTaskCommand = (text: string): boolean => {
+    const lowerText = text.toLowerCase();
+    return lowerText.includes('add task') || 
+           lowerText.includes('add') ||
+           lowerText.includes('create task') ||
+           lowerText.includes('new task') ||
+           lowerText.includes('task add') ||
+           lowerText.includes('task create') ||
+           lowerText.includes('complete task') ||
+           lowerText.includes('done task') ||
+           lowerText.includes('finish task') ||
+           lowerText.includes('task complete') ||
+           lowerText.includes('task done') ||
+           lowerText.includes('task finished') ||
+           lowerText.includes('mark complete') ||
+           lowerText.includes('mark done') ||
+           lowerText.includes('delete task') ||
+           lowerText.includes('remove task') ||
+           lowerText.includes('task delete') ||
+           lowerText.includes('task remove') ||
+           lowerText.includes('show tasks') ||
+           lowerText.includes('my tasks') ||
+           lowerText.includes('list tasks');
   };
 
   const sendMessage = async () => {
@@ -262,6 +425,328 @@ export default function ChatBot() {
     const messageToSend = inputText.trim();
     setInputText('');
     setIsLoading(true);
+
+    const lowerMsg = messageToSend.toLowerCase();
+    const isUrdu = isRomanUrdu(messageToSend);
+
+    // Check for greetings - respond directly without API call
+    if (isGreeting(messageToSend)) {
+      const greetingResponse = getBotResponse(messageToSend);
+      const botMessage: Message = {
+        id: Date.now() + 1,
+        text: greetingResponse,
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botMessage]);
+      setIsLoading(false);
+      return;
+    }
+
+    // Check for help request - respond directly without API call
+    if (isHelpRequest(messageToSend)) {
+      const helpResponse = getBotResponse(messageToSend);
+      const botMessage: Message = {
+        id: Date.now() + 1,
+        text: helpResponse,
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botMessage]);
+      setIsLoading(false);
+      return;
+    }
+
+    // Check if it's NOT a task command - show modern confirm modal instead of old alert
+    if (!isTaskCommand(messageToSend)) {
+      setShowConfirmModal(true);
+      setIsLoading(false);
+      return;
+    }
+
+    // Check if user wants to add a task
+    const isTaskAddRequest = 
+      lowerMsg.includes('add task') || 
+      lowerMsg.includes('add') ||
+      lowerMsg.includes('create task') ||
+      lowerMsg.includes('new task') ||
+      lowerMsg.includes('task add') ||
+      lowerMsg.includes('task create');
+
+    // Check if user wants to complete a task
+    const isTaskCompleteRequest = 
+      lowerMsg.includes('complete task') ||
+      lowerMsg.includes('done task') ||
+      lowerMsg.includes('finish task') ||
+      lowerMsg.includes('task complete') ||
+      lowerMsg.includes('task done') ||
+      lowerMsg.includes('task finished') ||
+      lowerMsg.includes('mark complete') ||
+      lowerMsg.includes('mark done');
+
+    // Check if user wants to delete a task
+    const isTaskDeleteRequest = 
+      lowerMsg.includes('delete task') ||
+      lowerMsg.includes('remove task') ||
+      lowerMsg.includes('task delete') ||
+      lowerMsg.includes('task remove');
+
+    // Check if user wants to see tasks
+    const isShowTasksRequest = 
+      lowerMsg.includes('show tasks') ||
+      lowerMsg.includes('my tasks') ||
+      lowerMsg.includes('list tasks') ||
+      lowerMsg.includes('view tasks') ||
+      lowerMsg.includes('all tasks') ||
+      (lowerMsg.includes('task') && !isTaskAddRequest && !isTaskCompleteRequest && !isTaskDeleteRequest);
+
+    // Handle show tasks request - fetch and display tasks with Show More button
+    if (isShowTasksRequest) {
+      setShowingAllTasks(false);
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+        const token = localStorage.getItem('access_token');
+        const userId = localStorage.getItem('user_id');
+        
+        if (userId && token) {
+          const response = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (response.ok) {
+            const tasks = await response.json();
+            const pendingTasks = tasks.filter((t: any) => t.status === 'pending');
+            const completedTasks = tasks.filter((t: any) => t.status === 'completed');
+            const totalTasks = pendingTasks.length + completedTasks.length;
+            
+            if (totalTasks === 0) {
+              const botMessage: Message = {
+                id: Date.now() + 1,
+                text: isUrdu 
+                  ? "📝 Aapke paas koi task nahi hai!\n\nTask add karne ke liye bolen: 'Add task: Meri task'"
+                  : "📝 You don't have any tasks yet!\n\nTry adding a task like: \"Add task: Buy groceries\"",
+                sender: 'bot',
+                timestamp: new Date()
+              };
+              setMessages(prev => [...prev, botMessage]);
+            } else {
+              // Show first 5 tasks with option to see more
+              const displayCount = 5;
+              let taskListText = isUrdu
+                ? `📋 Aapke Tasks (${totalTasks} total):\n\n`
+                : `📋 Your Tasks (${totalTasks} total):\n\n`;
+              
+              if (pendingTasks.length > 0) {
+                taskListText += isUrdu ? "⏳ Pending Tasks:\n" : "⏳ Pending Tasks:\n";
+                pendingTasks.slice(0, displayCount).forEach((task: any, index: number) => {
+                  taskListText += `${index + 1}. ${task.title}\n`;
+                });
+                if (pendingTasks.length > displayCount) {
+                  taskListText += isUrdu 
+                    ? `... aur ${pendingTasks.length - displayCount} aur tasks\n`
+                    : `... and ${pendingTasks.length - displayCount} more tasks\n`;
+                }
+              }
+              
+              if (completedTasks.length > 0) {
+                taskListText += isUrdu ? "\n✅ Completed Tasks:\n" : "\n✅ Completed Tasks:\n";
+                completedTasks.slice(0, displayCount).forEach((task: any, index: number) => {
+                  taskListText += `${index + 1}. ${task.title}\n`;
+                });
+                if (completedTasks.length > displayCount) {
+                  taskListText += isUrdu 
+                    ? `... aur ${completedTasks.length - displayCount} aur tasks\n`
+                    : `... and ${completedTasks.length - displayCount} more tasks\n`;
+                }
+              }
+              
+              const botMessage: Message = {
+                id: Date.now() + 1,
+                text: taskListText,
+                sender: 'bot',
+                timestamp: new Date()
+              };
+              setMessages(prev => [...prev, botMessage]);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load tasks:', error);
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    let taskActionResult = '';
+
+    // Try to create task locally
+    if (isTaskAddRequest) {
+      try {
+        let taskTitle = messageToSend
+          .replace(/add task:?/i, '')
+          .replace(/create task:?/i, '')
+          .replace(/new task:?/i, '')
+          .replace(/task add:?/i, '')
+          .replace(/task create:?/i, '')
+          .replace(/please/i, '')
+          .replace(/can you/i, '')
+          .replace(/i want to/i, '')
+          .replace(/i need to/i, '')
+          .trim();
+        
+        if (taskTitle && taskTitle.length > 0) {
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+          const token = localStorage.getItem('access_token');
+          const userId = localStorage.getItem('user_id');
+          
+          if (userId && token) {
+            const res = await fetch(`${backendUrl}/api/tasks/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                title: taskTitle,
+                description: null,
+                status: 'pending',
+                priority: 'medium',
+                category: null,
+                due_date: null
+              })
+            });
+            
+            if (res.ok) {
+              taskActionResult = isUrdu 
+                ? "✅ Task successfully created!"
+                : "✅ Task successfully created!";
+              console.log('✅ Task created from chatbot!');
+            }
+          }
+        }
+      } catch (taskError) {
+        console.error('Failed to create task from chatbot:', taskError);
+      }
+    }
+
+    // Try to complete task locally
+    if (isTaskCompleteRequest) {
+      try {
+        const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || 
+                           messageToSend.match(/(\d+)/);
+        
+        if (taskIdMatch) {
+          const taskId = taskIdMatch[1];
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+          const token = localStorage.getItem('access_token');
+          const userId = localStorage.getItem('user_id');
+          
+          if (userId && token) {
+            // First get the tasks to find the correct task ID
+            const tasksRes = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (tasksRes.ok) {
+              const tasks = await tasksRes.json();
+              const sortedTasks = tasks.sort((a: any, b: any) => 
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              );
+              const taskIndex = parseInt(taskId) - 1;
+              
+              if (sortedTasks[taskIndex]) {
+                const taskToComplete = sortedTasks[taskIndex];
+                const updateRes = await fetch(`${backendUrl}/api/tasks/${taskToComplete.id}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ status: 'completed' })
+                });
+                
+                if (updateRes.ok) {
+                  taskActionResult = isUrdu
+                    ? `✅ Task "${taskToComplete.title}" completed! Great job! 🎉`
+                    : `✅ Task "${taskToComplete.title}" completed! Great job! 🎉`;
+                  console.log('✅ Task completed from chatbot!');
+                }
+              } else {
+                taskActionResult = isUrdu
+                  ? "⚠️ Task nahi mila. Task number check karein."
+                  : "⚠️ Task not found. Please check the task number.";
+              }
+            }
+          }
+        } else {
+          taskActionResult = isUrdu
+            ? "⚠️ Task number specify karein. Example: 'Complete task 1'"
+            : "⚠️ Please specify the task number. Example: 'Complete task 1'";
+        }
+      } catch (taskError) {
+        console.error('Failed to complete task from chatbot:', taskError);
+        taskActionResult = isUrdu
+          ? "⚠️ Task complete karne mein error aaya."
+          : "⚠️ Error completing the task.";
+      }
+    }
+
+    // Try to delete task locally
+    if (isTaskDeleteRequest) {
+      try {
+        const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || 
+                           messageToSend.match(/(\d+)/);
+        
+        if (taskIdMatch) {
+          const taskId = taskIdMatch[1];
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+          const token = localStorage.getItem('access_token');
+          const userId = localStorage.getItem('user_id');
+          
+          if (userId && token) {
+            const tasksRes = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (tasksRes.ok) {
+              const tasks = await tasksRes.json();
+              const sortedTasks = tasks.sort((a: any, b: any) => 
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              );
+              const taskIndex = parseInt(taskId) - 1;
+              
+              if (sortedTasks[taskIndex]) {
+                const taskToDelete = sortedTasks[taskIndex];
+                const deleteRes = await fetch(`${backendUrl}/api/tasks/${taskToDelete.id}`, {
+                  method: 'DELETE',
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (deleteRes.ok) {
+                  taskActionResult = isUrdu
+                    ? `✅ Task "${taskToDelete.title}" delete ho gaya!`
+                    : `✅ Task "${taskToDelete.title}" has been deleted!`;
+                  console.log('✅ Task deleted from chatbot!');
+                }
+              } else {
+                taskActionResult = isUrdu
+                  ? "⚠️ Task nahi mila. Task number check karein."
+                  : "⚠️ Task not found. Please check the task number.";
+              }
+            }
+          }
+        } else {
+          taskActionResult = isUrdu
+            ? "⚠️ Task number specify karein. Example: 'Delete task 1'"
+            : "⚠️ Please specify the task number. Example: 'Delete task 1'";
+        }
+      } catch (taskError) {
+        console.error('Failed to delete task from chatbot:', taskError);
+        taskActionResult = isUrdu
+          ? "⚠️ Task delete karne mein error aaya."
+          : "⚠️ Error deleting the task.";
+      }
+    }
 
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
@@ -282,31 +767,52 @@ export default function ChatBot() {
 
       const data = await response.json();
       
+      let botText = data.bot_response || data.response || getBotResponse(messageToSend);
+      
+      // If task action was performed, prepend success message
+      if (taskActionResult) {
+        botText = taskActionResult + "\n\n" + botText;
+      }
+      
       const botMessage: Message = {
         id: Date.now() + 1,
-        text: data.bot_response || data.response || getBotResponse(messageToSend),
+        text: botText,
         sender: 'bot',
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, botMessage]);
 
-      // Refresh tasks if a task was created/updated
+      console.log('🔄 Dispatching refresh-tasks event...');
       window.dispatchEvent(new CustomEvent('refresh-tasks'));
     } catch (error) {
       console.error('Chat error:', error);
       
-      // Use local bot response as fallback
+      let fallbackText = getBotResponse(messageToSend);
+      if (taskActionResult) {
+        fallbackText = taskActionResult + "\n\n" + fallbackText;
+      }
+      
       const botMessage: Message = {
         id: Date.now() + 1,
-        text: getBotResponse(messageToSend),
+        text: fallbackText,
         sender: 'bot',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, botMessage]);
+      
+      if (taskActionResult) {
+        window.dispatchEvent(new CustomEvent('refresh-tasks'));
+      }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Function to handle confirmed page reload
+  const handleConfirmReload = () => {
+    setShowConfirmModal(false);
+    window.location.reload();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -318,6 +824,52 @@ export default function ChatBot() {
 
   return (
     <>
+      {/* Modern Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
+            onClick={() => setShowConfirmModal(false)}
+          />
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 animate-scale-in">
+            <div className="text-center">
+              {/* Icon */}
+              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                <span className="text-3xl">⚠️</span>
+              </div>
+              
+              {/* Title */}
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                Invalid Message
+              </h3>
+              
+              {/* Description */}
+              <p className="text-gray-600 mb-6">
+                I didn't understand that. Would you like to reload the page and try again?
+              </p>
+              
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmReload}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-semibold hover:from-red-600 hover:to-orange-600 transition-colors shadow-lg shadow-red-500/30"
+                >
+                  Reload Page
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Chat Toggle Button - Fixed position */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -348,7 +900,7 @@ export default function ChatBot() {
             </div>
             <button
               onClick={async () => {
-                if (confirm('Sab chat history clear karna hai? 🗑️')) {
+                if (confirm('Clear all chat history? 🗑️')) {
                   try {
                     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
                     const token = localStorage.getItem('access_token');
@@ -377,8 +929,8 @@ export default function ChatBot() {
             {messages.length === 0 && (
               <div className="text-center text-gray-500 py-8 px-4">
                 <div className="text-5xl mb-3">👋</div>
-                <p className="font-bold text-xl text-gray-700">As-salamu alaykum! </p>
-                <p className="text-sm mt-2 text-gray-500">Main TaskMate hu, aapki task manager buddy! 😊</p>
+                <p className="font-bold text-xl text-gray-700">Welcome!</p>
+                <p className="text-sm mt-2 text-gray-500">I'm TaskMate, your task manager assistant!</p>
               </div>
             )}
             {messages.map((message) => (
@@ -398,6 +950,21 @@ export default function ChatBot() {
                   }}
                 >
                   <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                  
+                  {/* Show "Show More" button for task responses */}
+                  {message.sender === 'bot' && (
+                    <div className="mt-2">
+                      {(message.text.includes('others') || message.text.includes('more') || message.text.includes('tasks:')) && !showingAllTasks && (
+                        <button
+                          onClick={handleShowMoreTasks}
+                          className="text-sm px-3 py-1.5 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition-colors font-medium"
+                        >
+                          👁️ Show All Tasks
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  
                   <p className={`text-xs mt-1 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-400'}`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
@@ -427,7 +994,7 @@ export default function ChatBot() {
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type your task..."
+                placeholder="Type your message..."
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200 text-sm"
                 disabled={isLoading}
               />
