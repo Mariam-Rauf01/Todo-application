@@ -85,17 +85,8 @@ export default function ChatBot() {
   useEffect(() => {
     if (isOpen && messages.length === 0 && !hasLoadedHistory.current) {
       hasLoadedHistory.current = true;
-      // Don't auto-load old chat history - start fresh each time
-      // loadChatHistory(); // Commented out to stop loading old messages
-      
-      // Show welcome message for new chat
-      const welcomeMessage: Message = {
-        id: Date.now(),
-        text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
-        sender: 'bot',
-        timestamp: new Date()
-      };
-      setMessages([welcomeMessage]);
+      // Load chat history from database
+      loadChatHistory();
     }
   }, [isOpen]);
 
@@ -124,6 +115,7 @@ export default function ChatBot() {
         }));
         
         if (loadedMessages.length === 0) {
+          // Show welcome message if no history
           const welcomeMessage: Message = {
             id: Date.now(),
             text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
@@ -134,9 +126,19 @@ export default function ChatBot() {
         } else {
           setMessages(loadedMessages);
         }
+      } else {
+        // Show welcome message on error
+        const welcomeMessage: Message = {
+          id: Date.now(),
+          text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        setMessages([welcomeMessage]);
       }
     } catch (error) {
       console.error('Failed to load chat history:', error);
+      // Show welcome message on error
       const welcomeMessage: Message = {
         id: Date.now(),
         text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
@@ -753,76 +755,135 @@ Any other questions? 😊`;
         const token = localStorage.getItem('access_token');
         const userId = localStorage.getItem('user_id');
         
-        // Extract task number and new title from message
-        // Format: "update task 1 to new title" or "edit task 1: new title"
-        const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || messageToSend.match(/(\d+)/);
-        
-        if (taskIdMatch && userId && token) {
-          // Get the new title from the message
-          const newTitle = messageToSend
-            .replace(/update task:?\s*#?\d+/i, '')
-            .replace(/edit task:?\s*#?\d+/i, '')
-            .replace(/change task:?\s*#?\d+/i, '')
-            .replace(/modify task:?\s*#?\d+/i, '')
-            .replace(/to/i, '')
-            .replace(/:/i, '')
-            .trim();
+        if (userId && token) {
+          // Get all tasks
+          const tasksRes = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
           
-          if (newTitle && newTitle.length > 0) {
-            // Get tasks to find the task
-            const tasksRes = await fetch(`${backendUrl}/api/tasks/?user_id=${userId}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
+          if (tasksRes.ok) {
+            const allTasks = await tasksRes.json();
+            const sortedTasks = allTasks.sort((a: any, b: any) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
             
-            if (tasksRes.ok) {
-              const allTasks = await tasksRes.json();
-              const sortedTasks = allTasks.sort((a: any, b: any) => 
-                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-              );
+            // Try to extract task by number first
+            const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || messageToSend.match(/(\d+)/);
+            
+            let taskToUpdate = null;
+            let newTitle = '';
+            
+            if (taskIdMatch) {
+              // Find by number
               const taskIndex = parseInt(taskIdMatch[1]) - 1;
-              
               if (sortedTasks[taskIndex]) {
-                const taskToUpdate = sortedTasks[taskIndex];
-                
-                // Update the task
-                const updateRes = await fetch(`${backendUrl}/api/tasks/${taskToUpdate.id}`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                  },
-                  body: JSON.stringify({ title: newTitle })
-                });
-                
-                if (updateRes.ok) {
-                  // Make sure chat is open to show message
-                  setIsOpen(true);
-                  
-                  const taskActionResult = isUrdu
-                    ? `✅ Task update ho gaya! "${taskToUpdate.title}" → "${newTitle}"`
-                    : `✅ Task updated! "${taskToUpdate.title}" → "${newTitle}"`;
-                  const botMessage: Message = {
-                    id: Date.now() + 1,
-                    text: taskActionResult,
-                    sender: 'bot',
-                    timestamp: new Date()
-                  };
-                  setMessages(prev => [...prev, botMessage]);
-                  window.dispatchEvent(new CustomEvent('refresh-tasks'));
-                  setIsLoading(false);
-                  return;
-                }
+                taskToUpdate = sortedTasks[taskIndex];
+                // Get new title
+                newTitle = messageToSend
+                  .replace(/update task:?\s*#?\d+/i, '')
+                  .replace(/edit task:?\s*#?\d+/i, '')
+                  .replace(/change task:?\s*#?\d+/i, '')
+                  .replace(/modify task:?\s*#?\d+/i, '')
+                  .replace(/to/i, '')
+                  .replace(/:/i, '')
+                  .trim();
               }
+            } else {
+              // Try to find by name pattern: "update task eat to drink"
+              // Look for pattern: update task [old name] to [new name]
+              const updatePattern = messageToSend
+                .replace(/update task:?/i, '')
+                .replace(/edit task:?/i, '')
+                .replace(/change task:?/i, '')
+                .replace(/modify task:?/i, '')
+                .trim();
+              
+              // Split by "to" or se (urdu)
+              const parts = updatePattern.split(/\bto\b/i).filter((p: string) => p.trim());
+              const urduParts = updatePattern.split(/\bse\b/i).filter((p: string) => p.trim());
+              
+              if (parts.length >= 2) {
+                const oldName = parts[0].trim();
+                newTitle = parts[1].trim();
+                // Find task by old name
+                taskToUpdate = sortedTasks.find((t: any) => 
+                  t.title.toLowerCase().includes(oldName.toLowerCase())
+                );
+              } else if (urduParts.length >= 2) {
+                const oldName = urduParts[0].trim();
+                newTitle = urduParts[1].trim();
+                // Find task by old name
+                taskToUpdate = sortedTasks.find((t: any) => 
+                  t.title.toLowerCase().includes(oldName.toLowerCase())
+                );
+              } else if (updatePattern.trim()) {
+                // Just update title directly if only one part
+                newTitle = updatePattern.trim();
+              }
+            }
+            
+            if (taskToUpdate && newTitle && newTitle.length > 0) {
+              // Update the task
+              const updateRes = await fetch(`${backendUrl}/api/tasks/${taskToUpdate.id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ title: newTitle })
+              });
+              
+              if (updateRes.ok) {
+                // Make sure chat is open to show message
+                setIsOpen(true);
+                
+                const taskActionResult = isUrdu
+                  ? `✅ Task update ho gaya! "${taskToUpdate.title}" → "${newTitle}"`
+                  : `✅ Task updated! "${taskToUpdate.title}" → "${newTitle}"`;
+                const botMessage: Message = {
+                  id: Date.now() + 1,
+                  text: taskActionResult,
+                  sender: 'bot',
+                  timestamp: new Date()
+                };
+                setMessages(prev => [...prev, botMessage]);
+                window.dispatchEvent(new CustomEvent('refresh-tasks'));
+                setIsLoading(false);
+                return;
+              }
+            }
+            
+            // Show available tasks if not found
+            if (sortedTasks.length > 0) {
+              let taskList = isUrdu
+                ? "⚠️ Task nahi mila. Yeh aapke tasks hain:\n\n"
+                : "⚠️ Task not found. Your tasks:\n\n";
+              sortedTasks.slice(0, 5).forEach((t: any, i: number) => {
+                taskList += `${i + 1}. ${t.title}\n`;
+              });
+              taskList += isUrdu 
+                ? "\n✏️ Update karne ke liye: 'Update task 1 to new title'"
+                : "\n✏️ To update: 'Update task 1 to new title'";
+              
+              const botMessage: Message = {
+                id: Date.now() + 1,
+                text: taskList,
+                sender: 'bot',
+                timestamp: new Date()
+              };
+              setMessages(prev => [...prev, botMessage]);
+              setIsLoading(false);
+              return;
             }
           }
         }
         
-        // If no valid update, show instructions
+        // If no tasks found
         const botMessage: Message = {
           id: Date.now() + 1,
           text: isUrdu
-            ? "✏️ Task update karne ke liye:\n\n'Update task 1 to new title'\n\nExample: 'Update task 1 to Buy vegetables'\n\nYe task title change kar dega."
-            : "✏️ To update a task, use:\n\n'Update task 1 to new title'\n\nExample: 'Update task 1 to Buy vegetables'\n\nThis will change the task title.",
+            ? "⚠️ Koi task nahi mila!"
+            : "⚠️ No tasks found!",
           sender: 'bot',
           timestamp: new Date()
         };
@@ -883,6 +944,18 @@ Any other questions? 😊`;
                 ? `✅ Task "${taskTitle}" successfully created!`
                 : `✅ Task "${taskTitle}" successfully created!`;
               console.log('✅ Task created from chatbot!');
+              
+              // Save to database
+              try {
+                await fetch(`${backendUrl}/api/chatbot/chat`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ message: messageToSend })
+                });
+              } catch (e) { /* ignore save error */ }
               
               // Make sure chat is open
               setIsOpen(true);
