@@ -47,7 +47,7 @@ export default function ChatBot() {
       hasLoadedHistory.current = false;
       const welcomeMessage: Message = {
         id: getUniqueMessageId(),
-        text: "👋 Assalamu alaykum & Hello! 😄\n\nWelcome to TaskMate AI!\nAapka task manager assistant hoon. Kaise madad kar sakta hoon? 😊",
+        text: "👋 Hello! Welcome to TaskMate AI! 😄\n\nI'm your personal task manager assistant.\n\nHow can I help you today?",
         sender: 'bot',
         timestamp: new Date()
       };
@@ -60,7 +60,7 @@ export default function ChatBot() {
       hasLoadedHistory.current = false;
       const welcomeMessage: Message = {
         id: getUniqueMessageId(),
-        text: "👋 Assalamu alaykum & Hello! 😄\n\nWelcome to TaskMate AI!\nAapka task manager assistant hoon. Kaise madad kar sakta hoon? 😊",
+        text: "👋 Hello! Welcome to TaskMate AI! 😄\n\nI'm your personal task manager assistant.\n\nHow can I help you today?",
         sender: 'bot',
         timestamp: new Date()
       };
@@ -97,7 +97,7 @@ export default function ChatBot() {
   // Load previous chat history when chat opens (only first time and only if user logged in)
   const hasLoadedHistory = useRef(false);
   useEffect(() => {
-    if (isOpen && messages.length === 0 && !hasLoadedHistory.current) {
+    if (isOpen && !hasLoadedHistory.current) {
       hasLoadedHistory.current = true;
       // Load chat history from database
       loadChatHistory();
@@ -133,19 +133,26 @@ export default function ChatBot() {
           // Show welcome message if no history
           const welcomeMessage: Message = {
             id: getUniqueMessageId(),
-            text: "👋 Assalamu alaykum & Hello! 😄\n\nWelcome to TaskMate AI!\nAapka task manager assistant hoon. Kaise madad kar sakta hoon? 😊",
+            text: "👋 Hello! Welcome to TaskMate AI! 😄\n\nI'm your personal task manager assistant.\n\nHow can I help you today?",
             sender: 'bot',
             timestamp: new Date()
           };
           setMessages([welcomeMessage]);
         } else {
-          setMessages(loadedMessages);
+          // Add welcome message at the start if not in DB
+          const welcomeMessage: Message = {
+            id: getUniqueMessageId(),
+            text: "👋 Hello! Welcome to TaskMate AI! 😄\n\nI'm your personal task manager assistant.\n\nHow can I help you today?",
+            sender: 'bot',
+            timestamp: new Date()
+          };
+          setMessages([welcomeMessage, ...loadedMessages]);
         }
       } else {
         // Show welcome message on error
         const welcomeMessage: Message = {
           id: getUniqueMessageId(),
-          text: "👋 Assalamu alaykum & Hello! 😄\n\nWelcome to TaskMate AI!\nAapka task manager assistant hoon. Kaise madad kar sakta hoon? 😊",
+          text: "👋 Hello! Welcome to TaskMate AI! 😄\n\nI'm your personal task manager assistant.\n\nHow can I help you today?",
           sender: 'bot',
           timestamp: new Date()
         };
@@ -156,7 +163,7 @@ export default function ChatBot() {
       // Show welcome message on error
       const welcomeMessage: Message = {
         id: getUniqueMessageId(),
-        text: "👋 Assalamu alaykum & Hello! 😄\n\nWelcome to TaskMate AI!\nAapka task manager assistant hoon. Kaise madad kar sakta hoon? 😊",
+        text: "👋 Hello! Welcome to TaskMate AI! 😄\n\nI'm your personal task manager assistant.\n\nHow can I help you today?",
         sender: 'bot',
         timestamp: new Date()
       };
@@ -593,7 +600,24 @@ export default function ChatBot() {
            lowerText.includes('list tasks') ||
            lowerText.includes('who am i') ||
            lowerText.includes('profile') ||
-           lowerText.includes('my info');
+           lowerText.includes('my info') ||
+           // Roman Urdu task commands
+           lowerText.includes('task add') ||
+           lowerText.includes('add karo') ||
+           lowerText.includes('task complete') ||
+           lowerText.includes('complete karo') ||
+           lowerText.includes('task delete') ||
+           lowerText.includes('delete karo') ||
+           lowerText.includes('task update') ||
+           lowerText.includes('update karo') ||
+           lowerText.includes('task badlo') ||
+           lowerText.includes('task edit') ||
+           lowerText.includes('edit karo') ||
+           lowerText.includes('badlo') ||
+           lowerText.includes('task dikhao') ||
+           lowerText.includes('tasks dikhao') ||
+           lowerText.includes('meri tasks') ||
+           lowerText.includes('sari tasks');
   };
 
   const sendMessage = async () => {
@@ -737,7 +761,13 @@ Any other questions? 😊`;
       lowerMsg.includes('create task') ||
       lowerMsg.includes('new task') ||
       lowerMsg.includes('task add') ||
-      lowerMsg.includes('task create');
+      lowerMsg.includes('task create') ||
+      // Roman Urdu
+      lowerMsg.includes('task add karo') ||
+      lowerMsg.includes('add karo') ||
+      lowerMsg.includes('naya task') ||
+      lowerMsg.includes('new task') ||
+      lowerMsg.includes('task banao');
 
     // Check if user wants to complete a task
     const isTaskCompleteRequest = 
@@ -748,14 +778,25 @@ Any other questions? 😊`;
       lowerMsg.includes('task done') ||
       lowerMsg.includes('task finished') ||
       lowerMsg.includes('mark complete') ||
-      lowerMsg.includes('mark done');
+      lowerMsg.includes('mark done') ||
+      // Roman Urdu
+      lowerMsg.includes('task complete') ||
+      lowerMsg.includes('complete karo') ||
+      lowerMsg.includes('task done') ||
+      lowerMsg.includes('kar do') ||
+      lowerMsg.includes('task finish');
 
     // Check if user wants to delete a task
     const isTaskDeleteRequest = 
       lowerMsg.includes('delete task') ||
       lowerMsg.includes('remove task') ||
       lowerMsg.includes('task delete') ||
-      lowerMsg.includes('task remove');
+      lowerMsg.includes('task remove') ||
+      // Roman Urdu
+      lowerMsg.includes('task delete') ||
+      lowerMsg.includes('delete karo') ||
+      lowerMsg.includes('task hata') ||
+      lowerMsg.includes('hata do');
 
     // Check if user wants to see tasks
     const isShowTasksRequest = 
@@ -764,6 +805,12 @@ Any other questions? 😊`;
       lowerMsg.includes('list tasks') ||
       lowerMsg.includes('view tasks') ||
       lowerMsg.includes('all tasks') ||
+      // Roman Urdu
+      lowerMsg.includes('tasks dikhao') ||
+      lowerMsg.includes('meri tasks') ||
+      lowerMsg.includes('sari tasks') ||
+      lowerMsg.includes('tasks dekhna') ||
+      lowerMsg.includes('task dikhao') ||
       (lowerMsg.includes('task') && !isTaskAddRequest && !isTaskCompleteRequest && !isTaskDeleteRequest && !lowerMsg.includes('update') && !lowerMsg.includes('edit') && !lowerMsg.includes('change') && !lowerMsg.includes('modify'));
 
     // Check for update task request
@@ -771,7 +818,16 @@ Any other questions? 😊`;
       lowerMsg.includes('update task') ||
       lowerMsg.includes('edit task') ||
       lowerMsg.includes('change task') ||
-      lowerMsg.includes('modify task');
+      lowerMsg.includes('modify task') ||
+      // Roman Urdu patterns
+      lowerMsg.includes('task update') ||
+      lowerMsg.includes('task badlo') ||
+      lowerMsg.includes('task edit') ||
+      lowerMsg.includes('task change') ||
+      lowerMsg.includes('task modify') ||
+      lowerMsg.includes('update karo') ||
+      lowerMsg.includes('badlo') ||
+      lowerMsg.includes('edit karo');
 
     // Handle show tasks request - show all tasks with clickable buttons
     if (isShowTasksRequest) {

@@ -49,7 +49,7 @@ export default function ChatScreen() {
     if (messages.length === 0) {
       const welcomeMessage: Message = {
         id: 'welcome',
-        text: "👋 Assalamu alaykum & Hello! 😄\n\nWelcome to TaskMate AI!\nAapka task manager assistant hoon. Kaise madad kar sakta hoon? 😊",
+        text: "👋 Hello! Welcome to TaskMate AI! 😄\n\nI'm your personal task manager assistant.\n\nHow can I help you today?",
         sender: 'bot',
         timestamp: new Date(),
       };
