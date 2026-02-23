@@ -25,6 +25,18 @@ export default function ChatBot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Debug logging for message duplication issues
+  const debugLog = (action: string, data: any) => {
+    console.log(`[ChatBot Debug] ${action}:`, JSON.stringify(data));
+  };
+
+  // Generate unique message ID using counter
+  const messageIdCounter = useRef(0);
+  const getUniqueMessageId = () => {
+    messageIdCounter.current += 1;
+    return Date.now() * 1000 + messageIdCounter.current;
+  };
+
   // Handle confirm modal action
   const handleConfirmAction = () => {
     setShowConfirmModal(false);
@@ -34,24 +46,26 @@ export default function ChatBot() {
       setShowingAllTasks(false);
       hasLoadedHistory.current = false;
       const welcomeMessage: Message = {
-        id: Date.now(),
-        text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
+        id: getUniqueMessageId(),
+        text: "👋 Assalamu alaykum & Hello! 😄\n\nWelcome to TaskMate AI!\nAapka task manager assistant hoon. Kaise madad kar sakta hoon? 😊",
         sender: 'bot',
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
+      debugLog('Clear chat', { messageCount: 0 });
     } else if (confirmModalType === 'new') {
       // New chat
       setMessages([]);
       setShowingAllTasks(false);
       hasLoadedHistory.current = false;
       const welcomeMessage: Message = {
-        id: Date.now(),
-        text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
+        id: getUniqueMessageId(),
+        text: "👋 Assalamu alaykum & Hello! 😄\n\nWelcome to TaskMate AI!\nAapka task manager assistant hoon. Kaise madad kar sakta hoon? 😊",
         sender: 'bot',
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
+      debugLog('New chat', { messageCount: 0 });
     }
   };
 
@@ -118,8 +132,8 @@ export default function ChatBot() {
         if (loadedMessages.length === 0) {
           // Show welcome message if no history
           const welcomeMessage: Message = {
-            id: Date.now(),
-            text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
+            id: getUniqueMessageId(),
+            text: "👋 Assalamu alaykum & Hello! 😄\n\nWelcome to TaskMate AI!\nAapka task manager assistant hoon. Kaise madad kar sakta hoon? 😊",
             sender: 'bot',
             timestamp: new Date()
           };
@@ -130,8 +144,8 @@ export default function ChatBot() {
       } else {
         // Show welcome message on error
         const welcomeMessage: Message = {
-          id: Date.now(),
-          text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
+          id: getUniqueMessageId(),
+          text: "👋 Assalamu alaykum & Hello! 😄\n\nWelcome to TaskMate AI!\nAapka task manager assistant hoon. Kaise madad kar sakta hoon? 😊",
           sender: 'bot',
           timestamp: new Date()
         };
@@ -141,8 +155,8 @@ export default function ChatBot() {
       console.error('Failed to load chat history:', error);
       // Show welcome message on error
       const welcomeMessage: Message = {
-        id: Date.now(),
-        text: "Hello! Welcome to TaskMate AI! 👋\n\nI'm here to help you manage your tasks. How can I assist you today?",
+        id: getUniqueMessageId(),
+        text: "👋 Assalamu alaykum & Hello! 😄\n\nWelcome to TaskMate AI!\nAapka task manager assistant hoon. Kaise madad kar sakta hoon? 😊",
         sender: 'bot',
         timestamp: new Date()
       };
@@ -156,7 +170,7 @@ export default function ChatBot() {
       const customEvent = event as CustomEvent;
       if (customEvent.detail) {
         const botMessage: Message = {
-          id: Date.now(),
+          id: getUniqueMessageId(),
           text: customEvent.detail.message || 'Your task list has been updated!',
           sender: 'bot',
           timestamp: new Date()
@@ -375,7 +389,7 @@ export default function ChatBot() {
         
         // Add bot message with all tasks
         const botMessage: Message = {
-          id: Date.now(),
+          id: getUniqueMessageId(),
           text: taskListText,
           sender: 'bot',
           timestamp: new Date()
@@ -407,7 +421,7 @@ export default function ChatBot() {
       
       if (response.ok) {
         const botMessage: Message = {
-          id: Date.now(),
+          id: getUniqueMessageId(),
           text: `✅ Task "${taskTitle}" completed successfully! 🎉`,
           sender: 'bot',
           timestamp: new Date()
@@ -442,7 +456,7 @@ export default function ChatBot() {
       
       if (response.ok) {
         const botMessage: Message = {
-          id: Date.now(),
+          id: getUniqueMessageId(),
           text: `🗑️ Task "${taskTitle}" deleted!`,
           sender: 'bot',
           timestamp: new Date()
@@ -548,7 +562,7 @@ export default function ChatBot() {
     if (!inputText.trim() || isLoading) return;
 
     const userMessage: Message = {
-      id: Date.now(),
+      id: getUniqueMessageId(),
       text: inputText.trim(),
       sender: 'user',
       timestamp: new Date()
@@ -579,7 +593,7 @@ Koi aur sawaal? 😊`
 
 Any other questions? 😊`;
         const botMessage: Message = {
-          id: Date.now() + 1,
+          id: getUniqueMessageId(),
           text: profileText,
           sender: 'bot',
           timestamp: new Date()
@@ -587,7 +601,7 @@ Any other questions? 😊`;
         setMessages(prev => [...prev, botMessage]);
       } else {
         const botMessage: Message = {
-          id: Date.now() + 1,
+          id: getUniqueMessageId(),
           text: isUrdu
             ? "⚠️ Mujhe aapki information nahi mili. Please login karein."
             : "⚠️ I don't have your information. Please login first.",
@@ -604,7 +618,7 @@ Any other questions? 😊`;
     if (isGreeting(messageToSend)) {
       const greetingResponse = getBotResponse(messageToSend);
       const botMessage: Message = {
-        id: Date.now() + 1,
+        id: getUniqueMessageId(),
         text: greetingResponse,
         sender: 'bot',
         timestamp: new Date()
@@ -618,7 +632,7 @@ Any other questions? 😊`;
     if (isHelpRequest(messageToSend)) {
       const helpResponse = getBotResponse(messageToSend);
       const botMessage: Message = {
-        id: Date.now() + 1,
+        id: getUniqueMessageId(),
         text: helpResponse,
         sender: 'bot',
         timestamp: new Date()
@@ -632,7 +646,7 @@ Any other questions? 😊`;
     if (!isTaskCommand(messageToSend)) {
       // Show message in chat instead of popup
       const botMessage: Message = {
-        id: Date.now() + 1,
+        id: getUniqueMessageId(),
         text: isUrdu
           ? "🤔 Samajh nahi aaya!\n\nMein sirf tasks manage kar sakta hoon.\n\nKuch yeh try karein:\n• 'Add task: Meri task'\n• 'Show my tasks'\n• 'Complete task 1'\n• 'Delete task 1'"
           : "🤔 I didn't understand that!\n\nI can only help you manage tasks.\n\nTry these:\n• 'Add task: My task'\n• 'Show my tasks'\n• 'Complete task 1'\n• 'Delete task 1'",
@@ -708,7 +722,7 @@ Any other questions? 😊`;
             
             if (totalTasks === 0) {
               const botMessage: Message = {
-                id: Date.now() + 1,
+                id: getUniqueMessageId(),
                 text: "📝 You don't have any tasks yet!\n\nTry adding a task like: \"Add task: Buy groceries\"",
                 sender: 'bot',
                 timestamp: new Date()
@@ -733,7 +747,7 @@ Any other questions? 😊`;
               }
               
               const botMessage: Message = {
-                id: Date.now() + 1,
+                id: getUniqueMessageId(),
                 text: taskListText,
                 sender: 'bot',
                 timestamp: new Date()
@@ -842,7 +856,7 @@ Any other questions? 😊`;
                   ? `✅ Task update ho gaya! "${taskToUpdate.title}" → "${newTitle}"`
                   : `✅ Task updated! "${taskToUpdate.title}" → "${newTitle}"`;
                 const botMessage: Message = {
-                  id: Date.now() + 1,
+                  id: getUniqueMessageId(),
                   text: taskActionResult,
                   sender: 'bot',
                   timestamp: new Date()
@@ -850,6 +864,9 @@ Any other questions? 😊`;
                 setMessages(prev => [...prev, botMessage]);
                 window.dispatchEvent(new CustomEvent('refresh-tasks'));
                 setIsLoading(false);
+                
+                // Skip API call - already handled locally to avoid duplicate messages
+                debugLog('Task updated (local)', { oldTitle: taskToUpdate.title, newTitle, messageId: botMessage.id });
                 return;
               }
             }
@@ -867,7 +884,7 @@ Any other questions? 😊`;
                 : "\n✏️ To update: 'Update task 1 to new title'";
               
               const botMessage: Message = {
-                id: Date.now() + 1,
+                id: getUniqueMessageId(),
                 text: taskList,
                 sender: 'bot',
                 timestamp: new Date()
@@ -881,7 +898,7 @@ Any other questions? 😊`;
         
         // If no tasks found
         const botMessage: Message = {
-          id: Date.now() + 1,
+          id: getUniqueMessageId(),
           text: isUrdu
             ? "⚠️ Koi task nahi mila!"
             : "⚠️ No tasks found!",
@@ -946,24 +963,12 @@ Any other questions? 😊`;
                 : `✅ Task "${taskTitle}" successfully created!`;
               console.log('✅ Task created from chatbot!');
               
-              // Save to database
-              try {
-                await fetch(`${backendUrl}/api/chatbot/chat`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                  },
-                  body: JSON.stringify({ message: messageToSend })
-                });
-              } catch (e) { /* ignore save error */ }
-              
               // Make sure chat is open
               setIsOpen(true);
               
               // Send bot response
               const botMessage: Message = {
-                id: Date.now() + 1,
+                id: getUniqueMessageId(),
                 text: taskActionResult,
                 sender: 'bot',
                 timestamp: new Date()
@@ -971,6 +976,9 @@ Any other questions? 😊`;
               setMessages(prev => [...prev, botMessage]);
               window.dispatchEvent(new CustomEvent('refresh-tasks'));
               setIsLoading(false);
+              
+              // Skip API call - already handled locally to avoid duplicate messages
+              debugLog('Task created (local)', { taskTitle, messageId: botMessage.id });
               return;
             }
           }
@@ -1053,7 +1061,7 @@ Any other questions? 😊`;
                 
                 // Send bot response
                 const botMessage: Message = {
-                  id: Date.now() + 1,
+                  id: getUniqueMessageId(),
                   text: taskActionResult,
                   sender: 'bot',
                   timestamp: new Date()
@@ -1061,6 +1069,9 @@ Any other questions? 😊`;
                 setMessages(prev => [...prev, botMessage]);
                 window.dispatchEvent(new CustomEvent('refresh-tasks'));
                 setIsLoading(false);
+                
+                // Skip API call - already handled locally to avoid duplicate messages
+                debugLog('Task completed (local)', { taskTitle: taskToComplete.title, messageId: botMessage.id });
                 return;
               }
             } else {
@@ -1159,7 +1170,7 @@ Any other questions? 😊`;
                 
                 // Send bot response
                 const botMessage: Message = {
-                  id: Date.now() + 1,
+                  id: getUniqueMessageId(),
                   text: taskActionResult,
                   sender: 'bot',
                   timestamp: new Date()
@@ -1167,6 +1178,9 @@ Any other questions? 😊`;
                 setMessages(prev => [...prev, botMessage]);
                 window.dispatchEvent(new CustomEvent('refresh-tasks'));
                 setIsLoading(false);
+                
+                // Skip API call - already handled locally to avoid duplicate messages
+                debugLog('Task deleted (local)', { taskTitle: taskToDelete.title, messageId: botMessage.id });
                 return;
               }
             } else {
@@ -1279,7 +1293,7 @@ Any other questions? 😊`;
                 setIsOpen(true);
                 
                 const botMessage: Message = {
-                  id: Date.now() + 1,
+                  id: getUniqueMessageId(),
                   text: taskActionResult,
                   sender: 'bot',
                   timestamp: new Date()
@@ -1287,6 +1301,9 @@ Any other questions? 😊`;
                 setMessages(prev => [...prev, botMessage]);
                 window.dispatchEvent(new CustomEvent('refresh-tasks'));
                 setIsLoading(false);
+                
+                // Skip API call - already handled locally to avoid duplicate messages
+                debugLog('Task marked pending (local)', { taskTitle: taskToIncomplete.title, messageId: botMessage.id });
                 return;
               }
             } else {
@@ -1337,21 +1354,23 @@ Any other questions? 😊`;
 
       const data = await response.json();
       
+      // Get bot response from API - don't prepend taskActionResult as it was already shown
       let botText = data.bot_response || data.response || getBotResponse(messageToSend);
       
-      // If task action was performed, prepend success message
-      if (taskActionResult) {
+      // Only add taskActionResult context if it wasn't already shown (task failed)
+      if (taskActionResult && !taskActionResult.includes('✅')) {
         botText = taskActionResult + "\n\n" + botText;
       }
       
       const botMessage: Message = {
-        id: Date.now() + 1,
+        id: getUniqueMessageId(),
         text: botText,
         sender: 'bot',
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, botMessage]);
+      debugLog('API response received', { messageId: botMessage.id, hasTaskAction: !!taskActionResult });
 
       console.log('🔄 Dispatching refresh-tasks event...');
       window.dispatchEvent(new CustomEvent('refresh-tasks'));
@@ -1364,7 +1383,7 @@ Any other questions? 😊`;
       }
       
       const botMessage: Message = {
-        id: Date.now() + 1,
+        id: getUniqueMessageId(),
         text: fallbackText,
         sender: 'bot',
         timestamp: new Date()
