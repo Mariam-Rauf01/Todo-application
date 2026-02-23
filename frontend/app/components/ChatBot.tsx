@@ -59,9 +59,29 @@ export default function ChatBot() {
   };
 
   // Handle confirm modal action
-  const handleConfirmAction = () => {
+  const handleConfirmAction = async () => {
     setShowConfirmModal(false);
+    
+    // Clear messages from database
+    const clearDbChat = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+        await fetch(`${backendUrl}/api/chatbot/messages`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      } catch (error) {
+        console.error('Failed to clear chat from database:', error);
+      }
+    };
+    
     if (confirmModalType === 'clear') {
+      // Clear chat from database
+      await clearDbChat();
+      
       // Clear chat and show welcome
       setMessages([]);
       setShowingAllTasks(false);
@@ -75,6 +95,9 @@ export default function ChatBot() {
       setMessages([welcomeMessage]);
       debugLog('Clear chat', { messageCount: 0 });
     } else if (confirmModalType === 'new') {
+      // Clear chat from database for new chat too
+      await clearDbChat();
+      
       // New chat
       setMessages([]);
       setShowingAllTasks(false);
@@ -953,18 +976,26 @@ Any other questions? 😊`;
                   .trim();
               }
             } else {
-              // Try to find by name pattern: "update task eat to drink"
+              // Try to find by name pattern: "update task eat to drink" or "task update karo shopping se washing"
               // Look for pattern: update task [old name] to [new name]
               const updatePattern = messageToSend
                 .replace(/update task:?/i, '')
                 .replace(/edit task:?/i, '')
                 .replace(/change task:?/i, '')
                 .replace(/modify task:?/i, '')
+                // Roman Urdu patterns
+                .replace(/task update karo/i, '')
+                .replace(/task badlo/i, '')
+                .replace(/task edit karo/i, '')
+                .replace(/update karo/i, '')
+                .replace(/badlo/i, '')
+                .replace(/edit karo/i, '')
                 .trim();
               
-              // Split by "to" or se (urdu)
+              // Split by "to" or "se" (urdu) or "ko" (urdu)
               const parts = updatePattern.split(/\bto\b/i).filter((p: string) => p.trim());
               const urduParts = updatePattern.split(/\bse\b/i).filter((p: string) => p.trim());
+              const koParts = updatePattern.split(/\bko\b/i).filter((p: string) => p.trim());
               
               if (parts.length >= 2) {
                 const oldName = parts[0].trim();
@@ -976,6 +1007,13 @@ Any other questions? 😊`;
               } else if (urduParts.length >= 2) {
                 const oldName = urduParts[0].trim();
                 newTitle = urduParts[1].trim();
+                // Find task by old name
+                taskToUpdate = sortedTasks.find((t: any) => 
+                  t.title.toLowerCase().includes(oldName.toLowerCase())
+                );
+              } else if (koParts.length >= 2) {
+                const oldName = koParts[0].trim();
+                newTitle = koParts[1].trim();
                 // Find task by old name
                 taskToUpdate = sortedTasks.find((t: any) => 
                   t.title.toLowerCase().includes(oldName.toLowerCase())
