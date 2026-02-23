@@ -140,13 +140,6 @@ export default function ChatBot() {
 
   // Load previous chat history when chat opens (only first time and only if user logged in)
   const hasLoadedHistory = useRef(false);
-  useEffect(() => {
-    if (isOpen && !hasLoadedHistory.current) {
-      hasLoadedHistory.current = true;
-      // Load chat history from database
-      loadChatHistory();
-    }
-  }, [isOpen]);
 
   const loadChatHistory = async () => {
     try {
@@ -162,10 +155,12 @@ export default function ChatBot() {
 
       if (response.ok) {
         const data = await response.json();
-        const sortedMessages = data.sort((a: any, b: any) => 
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime() ||
-          a.id - b.id
-        );
+        const sortedMessages = data.sort((a: any, b: any) => {
+          const timeA = new Date(a.created_at).getTime();
+          const timeB = new Date(b.created_at).getTime();
+          if (timeA !== timeB) return timeA - timeB;
+          return a.id - b.id;
+        });
         const loadedMessages: Message[] = sortedMessages.map((msg: any) => ({
           id: msg.id,
           text: msg.sender === 'user' ? msg.message : (msg.response || msg.message),
@@ -214,6 +209,15 @@ export default function ChatBot() {
       setMessages([welcomeMessage]);
     }
   };
+
+  // Load history when component mounts
+  useEffect(() => {
+    if (!hasLoadedHistory.current) {
+      hasLoadedHistory.current = true;
+      // Load chat history from database
+      loadChatHistory();
+    }
+  }, []);
 
   // Listen for task-action events
   useEffect(() => {
@@ -298,12 +302,12 @@ export default function ChatBot() {
     
     // Help
     if (lowerInput.includes('help') || lowerInput.includes('guide')) {
-      return `🤖 TaskMate AI - Help\n\nI can help you with:\n\n✅ Adding new tasks\n✅ Viewing your tasks\n✅ Completing tasks\n✅ Deleting tasks\n\nExamples:\n• "Add task: Buy groceries"\n• "Show all my tasks"\n• "Complete task 1"\n• "Delete task 2"\n\nWhat would you like to do?`;
+      return `🤖 TaskMate AI - Help\n\nI can help you with:\n\n✅ Adding new tasks\n✅ Viewing your tasks\n✅ Completing tasks\n✅ Deleting tasks\n✅ Updating tasks\n✅ Marking tasks as pending\n\nExamples:\n• "Add task: Buy groceries"\n• "Show all my tasks"\n• "Complete task 1"\n• "Delete task 2"\n\nWhat would you like to do?`;
     }
     
     // Tasks
     if (lowerInput.includes('task') || lowerInput.includes('work') || lowerInput.includes('todolist')) {
-      return "📝 Need help with tasks?\n\nYou can tell me:\n• 'Add task: Buy groceries'\n• 'Show all my tasks'\n• 'Complete task 1'\n• 'Delete task 2'\n\nWhat task would you like to add?";
+      return "📝 Need help with tasks?\n\nYou can tell me:\n• 'Add task: Buy groceries'\n• 'Show all my tasks'\n• 'Complete task 1'\n• 'Delete task 2'\n• 'Update task 1 to New name'\n• 'Task 1 incomplete'\n\nWhat task would you like to add?";
     }
     
     // Thank you
@@ -374,7 +378,7 @@ export default function ChatBot() {
     // Help
     if (lowerInput.includes('help') || lowerInput.includes('madad') || 
         lowerInput.includes('sahayata') || lowerInput.includes('guide')) {
-      return `🤖 TaskMate AI - Help\n\nMein aapki in cheezon mein madad kar sakta hoon:\n\n✅ Tasks add karna\n✅ Tasks dekhna\n✅ Tasks complete karna\n✅ Tasks delete karna\n\nExamples:\n• "Add task: Groceries le aana"\n• "Meri sari tasks dikhao"\n• "Task 1 complete kar do"\n\nKya karna chahte hain? 😊`;
+      return `🤖 TaskMate AI - Help\n\nMein aapki in cheezon mein madad kar sakta hoon:\n\n✅ Tasks add karna\n✅ Tasks dekhna\n✅ Tasks complete karna\n✅ Tasks delete karna\n✅ Tasks update karna\n✅ Tasks incomplete karna\n\nExamples:\n• "Add task: Groceries le aana"\n• "Meri sari tasks dikhao"\n• "Task 1 complete kar do"\n• "Task 2 delete kar do"\n• "Update task 1 to New title"\n• "Task 1 incomplete"\n\nKya karna chahte hain? 😊`;
     }
     
     // Tasks
