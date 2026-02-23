@@ -49,7 +49,7 @@ export default function ChatScreen() {
     if (messages.length === 0) {
       const welcomeMessage: Message = {
         id: 'welcome',
-        text: "👋 Assalamu alaykum! Welcome to TaskMate AI!\n\nI'm your personal task manager assistant.\n\nHow can I help you today? 😊",
+        text: "👋 Assalamu alaykum & Hello! 😄\n\nWelcome to TaskMate AI!\nAapka task manager assistant hoon. Kaise madad kar sakta hoon? 😊",
         sender: 'bot',
         timestamp: new Date(),
       };
@@ -147,6 +147,25 @@ export default function ChatScreen() {
   const getBotResponse = (userInput: string): string => {
     const lowerInput = userInput.toLowerCase();
     const isUrdu = isRomanUrdu(userInput);
+    
+    // Language switch requests - English
+    if (lowerInput.includes('speak in english') || 
+        lowerInput.includes('english mein') || 
+        lowerInput.includes('in english') ||
+        lowerInput.includes('english only') ||
+        lowerInput.includes('just english') ||
+        lowerInput.includes('engkish')) {
+      return "Sure! I'll speak in English from now! 😊\n\nHow can I help you with your tasks today?";
+    }
+    
+    // Language switch requests - Roman Urdu
+    if (lowerInput.includes('speak in urdu') || 
+        lowerInput.includes('roman urdu mein') || 
+        lowerInput.includes('urdu mein') ||
+        lowerInput.includes('hindi mein') ||
+        lowerInput.includes('roman urdu')) {
+      return "Sure! Main ab Roman Urdu mein baat karunga! 😊\n\nAapke tasks mein kaise madad kar sakta hoon?";
+    }
     
     // User identity check
     if (lowerInput.includes('who am i') || lowerInput.includes('kon hun') || 
