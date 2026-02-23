@@ -105,7 +105,8 @@ export default function ChatBot() {
       if (response.ok) {
         const data = await response.json();
         const sortedMessages = data.sort((a: any, b: any) => 
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime() ||
+          a.id - b.id
         );
         const loadedMessages: Message[] = sortedMessages.map((msg: any) => ({
           id: msg.id,
