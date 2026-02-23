@@ -148,12 +148,39 @@ def chat_with_bot(
     Send a message to the AI chatbot and get a response
     """
     user_message = request_data.get("message", "").strip()
+    bot_response = request_data.get("response", "").strip()  # For saving local task responses
     
     if not user_message:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Message cannot be empty"
         )
+
+    # If response is provided (from local task operation), save it directly
+    if bot_response:
+        # Save both user message and bot response to database
+        user_msg = models.ChatMessage(
+            user_id=current_user.id,
+            message=user_message,
+            sender="user"
+        )
+        db.add(user_msg)
+        
+        bot_msg = models.ChatMessage(
+            user_id=current_user.id,
+            message=user_message,
+            response=bot_response,
+            sender="bot"
+        )
+        db.add(bot_msg)
+        db.commit()
+
+        return {
+            "user_message": user_message,
+            "bot_response": bot_response,
+            "response": bot_response,
+            "timestamp": datetime.utcnow().isoformat()
+        }
 
     try:
         # Default bot response

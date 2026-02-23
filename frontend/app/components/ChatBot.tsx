@@ -37,6 +37,27 @@ export default function ChatBot() {
     return Date.now() * 1000 + messageIdCounter.current;
   };
 
+  // Save message to database
+  const saveMessageToDb = async (userMsg: string, botResp: string) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
+      await fetch(`${backendUrl}/api/chatbot/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ 
+          message: userMsg,
+          response: botResp
+        })
+      });
+    } catch (error) {
+      console.error('Failed to save message:', error);
+    }
+  };
+
   // Handle confirm modal action
   const handleConfirmAction = () => {
     setShowConfirmModal(false);
@@ -1093,6 +1114,9 @@ Any other questions? 😊`;
               
               // Make sure chat is open
               setIsOpen(true);
+              
+              // Save to database
+              saveMessageToDb(messageToSend, taskActionResult);
               
               // Send bot response
               const botMessage: Message = {
