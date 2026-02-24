@@ -819,14 +819,15 @@ export default function TasksPage() {
                             <select
                               value={newTask.priority}
                               onChange={e => setNewTask({...newTask, priority: e.target.value as any})}
-                              className="w-full px-4 py-3 bg-gradient-to-r from-violet-50 to-purple-50 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none appearance-none cursor-pointer font-medium text-gray-700"
+                              className="w-full px-4 py-3 bg-violet-50 border-2 border-violet-200 rounded-xl focus:border-violet-500 focus:outline-none transition-all cursor-pointer font-medium text-gray-700"
+                              style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
                             >
                               <option value="low">🌿 Low</option>
                               <option value="medium">⚡ Medium</option>
                               <option value="high">🔥 High</option>
                             </select>
                             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                              <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                               </svg>
                             </div>
@@ -1123,14 +1124,15 @@ export default function TasksPage() {
                     <select
                       value={editForm.priority}
                       onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
-                      className="w-full px-4 py-3 bg-gradient-to-r from-violet-50 to-purple-50 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none appearance-none cursor-pointer font-medium text-gray-700"
+                      className="w-full px-4 py-3 bg-violet-50 border-2 border-violet-200 rounded-xl focus:border-violet-500 focus:outline-none transition-all cursor-pointer font-medium text-gray-700"
+                      style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
                     >
                       <option value="low">🌿 Low</option>
                       <option value="medium">⚡ Medium</option>
                       <option value="high">🔥 High</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                       </svg>
                     </div>
