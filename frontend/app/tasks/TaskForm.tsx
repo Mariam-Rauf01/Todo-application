@@ -139,21 +139,45 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
             />
           </div>
 
-          <div>
-            <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
-              Priority
-            </label>
-            <select
-              id="priority"
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="mt-1 block w-full bg-white rounded-md shadow-sm py-2 px-3 border-none focus:outline-none focus:ring-blue-500 sm:text-sm"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
+  <div className="space-y-2">
+  <label
+    htmlFor="priority"
+    className="block text-sm font-semibold text-gray-800"
+  >
+    Priority
+  </label>
+
+  <div className="relative">
+    <select
+      id="priority"
+      value={priority}
+      onChange={(e) => setPriority(e.target.value)}
+      className="appearance-none w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 pr-10 text-sm text-gray-700 shadow-sm transition duration-200 ease-in-out
+                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                 hover:border-gray-400 cursor-pointer"
+    >
+      <option value="low">🟢 Low</option>
+      <option value="medium">🟡 Medium</option>
+      <option value="high">🔴 High</option>
+    </select>
+
+    {/* Custom Chevron */}
+    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+      <svg
+        className="h-4 w-4"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fillRule="evenodd"
+          d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+          clipRule="evenodd"
+        />
+      </svg>
+    </div>
+  </div>
+</div>
         </div>
 
         <div>
