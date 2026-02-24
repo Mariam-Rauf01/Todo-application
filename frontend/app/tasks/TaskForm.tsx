@@ -140,19 +140,26 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
           </div>
 
           <div>
-            <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
-              Priority
+            <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <span>🔥</span> Priority
             </label>
-            <select
-              id="priority"
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="mt-1 block w-full bg-white rounded-md shadow-sm py-2 px-3 border-none focus:outline-none focus:ring-blue-500 sm:text-sm"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
+            <div className="relative group">
+              <select
+                id="priority"
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="w-full px-4 py-3 pr-10 bg-gradient-to-br from-violet-50 to-purple-50 border-2 border-violet-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none transition-all cursor-pointer font-medium text-gray-700 appearance-none"
+              >
+                <option value="low" className="text-green-600">🌿 Low</option>
+                <option value="medium" className="text-yellow-600">⚡ Medium</option>
+                <option value="high" className="text-red-600">🔥 High</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg className="w-5 h-5 text-purple-500 group-hover:text-purple-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
 
