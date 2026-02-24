@@ -815,15 +815,22 @@ export default function TasksPage() {
                           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                             <span>🔥</span> Priority
                           </label>
-                          <select
-                            value={newTask.priority}
-                            onChange={e => setNewTask({...newTask, priority: e.target.value as any})}
-                            className="w-full px-4 py-3 bg-white border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none shadow-sm hover:shadow-md cursor-pointer"
-                          >
-                            <option value="low">🌿 Low</option>
-                            <option value="medium">⚡ Medium</option>
-                            <option value="high">🔥 High</option>
-                          </select>
+                          <div className="relative">
+                            <select
+                              value={newTask.priority}
+                              onChange={e => setNewTask({...newTask, priority: e.target.value as any})}
+                              className="w-full px-4 py-3 bg-gradient-to-r from-violet-50 to-purple-50 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none appearance-none cursor-pointer font-medium text-gray-700"
+                            >
+                              <option value="low">🌿 Low</option>
+                              <option value="medium">⚡ Medium</option>
+                              <option value="high">🔥 High</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                              <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                              </svg>
+                            </div>
+                          </div>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
@@ -1112,15 +1119,22 @@ export default function TasksPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     <span>🔥</span> Priority
                   </label>
-                  <select
-                    value={editForm.priority}
-                    onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
-                    className="w-full px-4 py-3 bg-white border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none shadow-sm hover:shadow-md cursor-pointer"
-                  >
-                    <option value="low">🌿 Low</option>
-                    <option value="medium">⚡ Medium</option>
-                    <option value="high">🔥 High</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={editForm.priority}
+                      onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-violet-50 to-purple-50 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none appearance-none cursor-pointer font-medium text-gray-700"
+                    >
+                      <option value="low">🌿 Low</option>
+                      <option value="medium">⚡ Medium</option>
+                      <option value="high">🔥 High</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
