@@ -184,6 +184,32 @@ def forgot_password(request: dict, db: Session = Depends(get_db)):
         # 2. Store the token in the database with expiration
         # 3. Send an email with the reset link
         
+        # Email integration example:
+        # Using SendGrid:
+        # from sendgrid import SendGridAPIClient
+        # from sendgrid.helpers.mail import Mail
+        # 
+        # sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
+        # message = Mail(
+        #     from_email='noreply@yourapp.com',
+        #     to_emails=email,
+        #     subject='Password Reset Request',
+        #     html_content=f'Click here to reset your password: https://yourapp.com/reset-password?token={token}'
+        # )
+        # sg.send(message)
+        #
+        # Using AWS SES:
+        # import boto3
+        # ses = boto3.client('ses', region_name='us-east-1')
+        # ses.send_email(
+        #     Source='noreply@yourapp.com',
+        #     Destination={'ToAddresses': [email]},
+        #     Message={
+        #         'Subject': {'Data': 'Password Reset Request'},
+        #         'Body': {'Html': {'Data': f'Click here to reset: https://yourapp.com/reset-password?token={token}'}}
+        #     }
+        # )
+        
         logger.info(f"Password reset requested for email: {email}")
         
         # For now, return success

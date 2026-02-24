@@ -11,6 +11,8 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,6 +23,12 @@ export default function Signup() {
     // Validate password length (bcrypt has 72 byte limit)
     if (password.length < 8) {
       setError('Password must be at least 8 characters');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setError('Please agree to the Terms of Service and Privacy Policy');
       setIsLoading(false);
       return;
     }
@@ -154,8 +162,71 @@ export default function Signup() {
               </div>
 
               <div className="flex items-start gap-2">
-                <input type="checkbox" className="w-4 h-4 mt-1 text-purple-600 rounded focus:ring-purple-500" required />
-                <span className="text-sm text-gray-600">I agree to the <a href="#" className="text-purple-600 hover:underline">Terms of Service</a> and <a href="#" className="text-purple-600 hover:underline">Privacy Policy</a></span>
+                <input 
+                  type="checkbox" 
+                  className="w-4 h-4 mt-1 text-purple-600 rounded focus:ring-purple-500"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  required 
+                />
+                <span className="text-sm text-gray-600">
+                  I agree to the{' '}
+                  <Link href="/terms" className="text-purple-600 hover:underline font-medium">Terms of Service</Link>
+                  {' '}and{' '}
+                  <Link href="/privacy" className="text-purple-600 hover:underline font-medium">Privacy Policy</Link>
+                </span>
+              </div>
+
+              {/* Rules Toggle */}
+              <div className="bg-purple-50 rounded-lg p-3">
+                <button
+                  type="button"
+                  onClick={() => setShowRules(!showRules)}
+                  className="flex items-center justify-between w-full text-sm text-purple-700 font-medium"
+                >
+                  <span>📋 Signup Rules & Guidelines</span>
+                  <span className={`transform transition-transform ${showRules ? 'rotate-180' : ''}`}>▼</span>
+                </button>
+                {showRules && (
+                  <div className="mt-3 space-y-2 text-xs text-gray-600">
+                    <div className="flex items-start gap-2">
+                      <span className="text-green-500">✓</span>
+                      <span>Use a valid email address for account recovery</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-green-500">✓</span>
+                      <span>Password must be at least 8 characters long</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-green-500">✓</span>
+                      <span>Provide your real full name</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-green-500">✓</span>
+                      <span>You must be at least 13 years old to sign up</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-green-500">✓</span>
+                      <span>One account per person is allowed</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-green-500">✓</span>
+                      <span>You are responsible for your account security</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-red-500">✕</span>
+                      <span>Do not share your password with anyone</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-red-500">✕</span>
+                      <span>Do not create fake or duplicate accounts</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-red-500">✕</span>
+                      <span>Do not misuse the app for illegal activities</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button
