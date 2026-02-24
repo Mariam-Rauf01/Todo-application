@@ -108,7 +108,7 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            className="mt-1 block w-full rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full rounded-md shadow-sm py-2 px-3 border-none focus:outline-none focus:ring-blue-500 sm:text-sm"
           />
         </div>
 
@@ -121,7 +121,7 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="mt-1 block w-full rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full rounded-md shadow-sm py-2 px-3 border-none focus:outline-none focus:ring-blue-500 sm:text-sm"
           />
         </div>
 
@@ -135,7 +135,7 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
               id="dueDate"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="mt-1 block w-full rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 sm:text-sm"
+              className="mt-1 block w-full rounded-md shadow-sm py-2 px-3 border-none focus:outline-none focus:ring-blue-500 sm:text-sm"
             />
           </div>
 
@@ -147,7 +147,7 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
               id="priority"
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
-              className="mt-1 block w-full bg-white rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 sm:text-sm"
+              className="mt-1 block w-full bg-white rounded-md shadow-sm py-2 px-3 border-none focus:outline-none focus:ring-blue-500 sm:text-sm"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -167,7 +167,7 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="e.g., Work, Personal, Shopping"
-              className="mt-1 block w-full rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 sm:text-sm"
+              className="mt-1 block w-full rounded-md shadow-sm py-2 px-3 border-none focus:outline-none focus:ring-blue-500 sm:text-sm"
             />
             {category && (
               <button

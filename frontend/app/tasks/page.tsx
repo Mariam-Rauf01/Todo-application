@@ -833,7 +833,7 @@ export default function TasksPage() {
                             value={newTask.category}
                             onChange={e => setNewTask({...newTask, category: e.target.value})}
                             placeholder="e.g., Work"
-                            className="w-full px-4 py-3 bg-white border border-violet-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                            className="w-full px-4 py-3 bg-white border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
                           />
                         </div>
                       </div>
@@ -1010,7 +1010,7 @@ export default function TasksPage() {
                     value={newCategory}
                     onChange={e => setNewCategory(e.target.value)}
                     placeholder="New category..."
-                    className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all text-sm"
+                    className="flex-1 px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all text-sm"
                     onKeyPress={e => e.key === 'Enter' && addCategory()}
                   />
                   <button

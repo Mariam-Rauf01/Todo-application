@@ -610,7 +610,11 @@ export default function ChatBot() {
     return lowerText.includes('help') || 
            lowerText.includes('guide') ||
            lowerText.includes('what can you do') ||
-           lowerText.includes('how do you work');
+           lowerText.includes('how do you work') ||
+           lowerText.includes('madad') ||
+           lowerText.includes('sahayata') ||
+           lowerText.includes('kya kam') ||
+           lowerText.includes('kya karta');
   };
 
   // Check if message is a valid task command
@@ -1739,7 +1743,15 @@ Any other questions? 😊`;
                       hover:bg-violet-200 transition-colors">
                     📋 Show Tasks
                   </button>
-                  <button onClick={() => setInputText('Help')} 
+                  <button onClick={() => {
+                    const helpMsg: Message = {
+                      id: getUniqueMessageId(),
+                      text: "👋 Hello! Welcome to TaskMate AI! 😄\n\nI'm your personal task manager assistant.\n\nHow can I help you today?\n\nHere's what I can do:\n✅ Add tasks\n✅ View all tasks\n✅ Complete tasks\n✅ Delete tasks\n✅ Update tasks\n✅ Mark tasks as pending\n\nTry saying:\n• \"Add task: Buy groceries\"\n• \"Show my tasks\"\n• \"Complete task 1\"\n• \"Delete task 2\"",
+                      sender: 'bot',
+                      timestamp: new Date()
+                    };
+                    setMessages(prev => [...prev, helpMsg]);
+                  }} 
                     className="px-4 py-2 bg-purple-100 text-purple-700 rounded-xl text-sm font-medium 
                       hover:bg-purple-200 transition-colors">
                     ❓ Help
@@ -1887,7 +1899,15 @@ Any other questions? 😊`;
                   hover:bg-violet-100 transition-colors whitespace-nowrap">
                 📋 Tasks
               </button>
-              <button onClick={() => setInputText('Help')} 
+              <button onClick={() => {
+                const helpMsg: Message = {
+                  id: getUniqueMessageId(),
+                  text: "👋 Hello! Welcome to TaskMate AI! 😄\n\nI'm your personal task manager assistant.\n\nHow can I help you today?\n\nHere's what I can do:\n✅ Add tasks\n✅ View all tasks\n✅ Complete tasks\n✅ Delete tasks\n✅ Update tasks\n✅ Mark tasks as pending\n\nTry saying:\n• \"Add task: Buy groceries\"\n• \"Show my tasks\"\n• \"Complete task 1\"\n• \"Delete task 2\"",
+                  sender: 'bot',
+                  timestamp: new Date()
+                };
+                setMessages(prev => [...prev, helpMsg]);
+              }} 
                 className="px-3 py-1.5 bg-purple-50 text-purple-600 rounded-xl text-xs font-medium 
                   hover:bg-purple-100 transition-colors whitespace-nowrap">
                 ❓ Help
