@@ -1115,7 +1115,7 @@ export default function TasksPage() {
                   <select
                     value={editForm.priority}
                     onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
-                    className="w-full px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
+                    className="w-full px-4 py-3 bg-white border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
                   >
                     <option value="low">🌿 Low</option>
                     <option value="medium">⚡ Medium</option>

@@ -301,13 +301,51 @@ export default function ChatBot() {
     }
     
     // Help
-    if (lowerInput.includes('help') || lowerInput.includes('guide')) {
-      return `🤖 TaskMate AI - Help\n\nI can help you with:\n\n✅ Adding new tasks\n✅ Viewing your tasks\n✅ Completing tasks\n✅ Deleting tasks\n✅ Updating tasks\n✅ Marking tasks as pending\n\nExamples:\n• "Add task: Buy groceries"\n• "Show all my tasks"\n• "Complete task 1"\n• "Delete task 2"\n\nWhat would you like to do?`;
+    if (lowerInput.includes('help') || lowerInput.includes('guide') ||
+        lowerInput.includes('what can i do') || lowerInput.includes('what can you do') ||
+        lowerInput.includes('features') || lowerInput.includes('options')) {
+      return `🌐 Bilingual Help Guide / Roman Urdu Mein madad:
+
+🇬🇧 English:
+✅ I can help you with:
+• Add tasks
+• View all tasks
+• Complete tasks
+• Delete tasks
+• Update tasks
+• Mark tasks as pending
+
+Examples:
+• "Add task: Buy groceries"
+• "Show my tasks"
+• "Complete task 1"
+• "Delete task 2"
+• "Update task 1 to New title"
+• "Task 1 incomplete"
+
+🇵🇰 Roman Urdu:
+✅ Mein aapki in cheezon mein madad kar sakta hoon:
+• Tasks add karna
+• Tasks dekhna
+• Tasks complete karna
+• Tasks delete karna
+• Tasks update karna
+• Tasks incomplete karna
+
+Examples:
+• "Add task: Groceries le aana"
+• "Meri sari tasks dikhao"
+• "Task 1 complete kar do"
+• "Task 2 delete kar do"
+• "Update task 1 to New title"
+• "Task 1 incomplete"
+
+Kya karna chahte hain? 😊`;
     }
     
     // Tasks
     if (lowerInput.includes('task') || lowerInput.includes('work') || lowerInput.includes('todolist')) {
-      return "📝 Need help with tasks?\n\nYou can tell me:\n• 'Add task: Buy groceries'\n• 'Show all my tasks'\n• 'Complete task 1'\n• 'Delete task 2'\n• 'Update task 1 to New name'\n• 'Task 1 incomplete'\n\nWhat task would you like to add?";
+      return `🌐 Bilingual Help Guide / Roman Urdu Mein madad:\n\n🇬🇧 English:\n📝 Need help with tasks?\n\nYou can tell me:\n• 'Add task: Buy groceries'\n• 'Show all my tasks'\n• 'Complete task 1'\n• 'Delete task 2'\n• 'Update task 1 to New name'\n• 'Task 1 incomplete'\n\n🇵🇰 Roman Urdu:\n📝 Tasks ke baare mein madad chahiye?\n\nAap mujhe bol sakte hain:\n• 'Add task: Groceries le aana'\n• 'Meri sari tasks dikhao'\n• 'Task 1 complete kar do'\n• 'Task 2 delete kar do'\n• 'Update task 1 to New title'\n• 'Task 1 incomplete'\n\nKaisa task add karna chahte hain? 😊`;
     }
     
     // Thank you
@@ -331,7 +369,7 @@ export default function ChatBot() {
     }
     
     // Default response in English
-    return "I understand! I'm here to help you manage your tasks!\n\nYou can ask me to:\n• Add a new task\n• Show your tasks\n• Complete a task\n• Delete a task\n• Get help\n\nWhat would you like to do?";
+    return `🌐 I understand! I'm here to help you manage your tasks!\n\n🇬🇧 English:\nYou can ask me to:\n• Add a new task\n• Show your tasks\n• Complete a task\n• Delete a task\n• Update a task\n• Get help\n\n🇵🇰 Roman Urdu:\nAap mujhe ye bol sakte hain:\n• Task add karna\n• Tasks dekhna\n• Task complete karna\n• Task delete karna\n• Task update karna\n• Help chahiye\n\nWhat would you like to do?`;
   };
 
   // Get Roman Urdu response (only when user types in Roman Urdu)
@@ -377,14 +415,18 @@ export default function ChatBot() {
     
     // Help
     if (lowerInput.includes('help') || lowerInput.includes('madad') || 
-        lowerInput.includes('sahayata') || lowerInput.includes('guide')) {
+        lowerInput.includes('sahayata') || lowerInput.includes('guide') ||
+        lowerInput.includes('kia kia') || lowerInput.includes('kya kya') ||
+        lowerInput.includes('kar sakta') || lowerInput.includes('kar skti') ||
+        lowerInput.includes('kya kam') || lowerInput.includes('features') ||
+        lowerInput.includes('options')) {
       return `🤖 TaskMate AI - Help\n\nMein aapki in cheezon mein madad kar sakta hoon:\n\n✅ Tasks add karna\n✅ Tasks dekhna\n✅ Tasks complete karna\n✅ Tasks delete karna\n✅ Tasks update karna\n✅ Tasks incomplete karna\n\nExamples:\n• "Add task: Groceries le aana"\n• "Meri sari tasks dikhao"\n• "Task 1 complete kar do"\n• "Task 2 delete kar do"\n• "Update task 1 to New title"\n• "Task 1 incomplete"\n\nKya karna chahte hain? 😊`;
     }
     
     // Tasks
     if (lowerInput.includes('task') || lowerInput.includes('kaam') || 
         lowerInput.includes('work') || lowerInput.includes('todolist')) {
-      return "📝 Tasks ke baare mein madad chahiye?\n\nAap mujhe bol sakte hain:\n• 'Add task: Groceries le aana'\n• 'Meri sari tasks dikhao'\n• 'Task 1 complete kar do'\n• 'Task 2 delete kar do'\n\nKaisa task add karna chahte hain? 😊";
+      return `🌐 Bilingual Help Guide / Roman Urdu Mein madad:\n\n🇬🇧 English:\n📝 Need help with tasks?\n\nYou can tell me:\n• 'Add task: Buy groceries'\n• 'Show all my tasks'\n• 'Complete task 1'\n• 'Delete task 2'\n• 'Update task 1 to New name'\n• 'Task 1 incomplete'\n\n🇵🇰 Roman Urdu:\n📝 Tasks ke baare mein madad chahiye?\n\nAap mujhe bol sakte hain:\n• 'Add task: Groceries le aana'\n• 'Meri sari tasks dikhao'\n• 'Task 1 complete kar do'\n• 'Task 2 delete kar do'\n• 'Update task 1 to New title'\n• 'Task 1 incomplete'\n\nKaisa task add karna chahte hain? 😊`;
     }
     
     // Thank you
@@ -415,7 +457,7 @@ export default function ChatBot() {
     }
     
     // Default response in Roman Urdu
-    return "🤔 Samajh gaya! Main yahan task management mein madad ke liye hoon. 😊\n\nAap mujhe ye bol sakte hain:\n• Task add karna\n• Meri tasks dikhana\n• Task complete karna\n• Task delete karna\n• Help chahiye\n\nAap kya karna chahte hain?";
+    return `🌐 Samajh gaya! Main yahan task management mein madad ke liye hoon. 😊\n\n🇬🇧 English:\nYou can ask me to:\n• Add a new task\n• Show your tasks\n• Complete a task\n• Delete a task\n• Update a task\n• Get help\n\n🇵🇰 Roman Urdu:\nAap mujhe ye bol sakte hain:\n• Task add karna\n• Meri tasks dikhana\n• Task complete karna\n• Task delete karna\n• Task update karna\n• Help chahiye\n\nAap kya karna chahte hain?`;
   };
 
   // Bot response logic - use Roman Urdu only when user types in Roman Urdu
@@ -610,11 +652,18 @@ export default function ChatBot() {
     return lowerText.includes('help') || 
            lowerText.includes('guide') ||
            lowerText.includes('what can you do') ||
+           lowerText.includes('what can i do') ||
            lowerText.includes('how do you work') ||
            lowerText.includes('madad') ||
            lowerText.includes('sahayata') ||
            lowerText.includes('kya kam') ||
-           lowerText.includes('kya karta');
+           lowerText.includes('kya karta') ||
+           lowerText.includes('kia kia') ||
+           lowerText.includes('kya kya') ||
+           lowerText.includes('kar sakta') ||
+           lowerText.includes('kar skti') ||
+           lowerText.includes('features') ||
+           lowerText.includes('options');
   };
 
   // Check if message is a valid task command
