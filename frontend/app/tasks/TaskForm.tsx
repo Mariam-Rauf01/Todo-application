@@ -148,14 +148,14 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
                 id="priority"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full px-4 py-3 pr-10 bg-gradient-to-br from-violet-50 to-purple-50 border-2 border-violet-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none transition-all cursor-pointer font-medium text-gray-700 appearance-none"
+                className="w-full px-4 py-3 pr-10 bg-white border-2 border-gray-200 rounded-2xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none transition-all cursor-pointer font-medium text-gray-700 appearance-none"
               >
                 <option value="low" className="text-green-600">🌿 Low</option>
                 <option value="medium" className="text-yellow-600">⚡ Medium</option>
                 <option value="high" className="text-red-600">🔥 High</option>
               </select>
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg className="w-5 h-5 text-purple-500 group-hover:text-purple-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-purple-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </div>
