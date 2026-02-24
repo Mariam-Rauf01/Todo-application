@@ -1098,7 +1098,7 @@ export default function TasksPage() {
                   type="text"
                   value={editForm.title}
                   onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                  className="w-full px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-violet-500 focus:outline-none transition-all outline-none"
                   required
                 />
               </div>
@@ -1110,7 +1110,7 @@ export default function TasksPage() {
                 <textarea
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  className="w-full px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-none outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-violet-500 focus:outline-none transition-all resize-none outline-none"
                   rows={3}
                 />
               </div>
@@ -1124,7 +1124,7 @@ export default function TasksPage() {
                     <select
                       value={editForm.priority}
                       onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
-                      className="w-full px-4 py-3 bg-violet-50 border-2 border-violet-200 rounded-xl focus:border-violet-500 focus:outline-none transition-all cursor-pointer font-medium text-gray-700"
+                      className="w-full px-4 py-3 bg-violet-50 border border-gray-300 rounded-xl focus:border-violet-500 focus:outline-none transition-all cursor-pointer font-medium text-gray-700"
                       style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
                     >
                       <option value="low">🌿 Low</option>
@@ -1147,7 +1147,7 @@ export default function TasksPage() {
                     type="date"
                     value={editForm.due_date}
                     onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
-                    className="w-full px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-violet-500 focus:outline-none transition-all outline-none"
                   />
                 </div>
               </div>
@@ -1161,7 +1161,7 @@ export default function TasksPage() {
                   value={editForm.category}
                   onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
                   placeholder="e.g., Work, Personal"
-                  className="w-full px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-violet-500 focus:outline-none transition-all outline-none"
                 />
               </div>
 
