@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -8,9 +8,23 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
   const router = useRouter();
+
+  // Load remembered email on mount
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem('remembered_email');
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +45,14 @@ export default function Login() {
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Handle remember me
+        if (rememberMe) {
+          localStorage.setItem('remembered_email', email);
+        } else {
+          localStorage.removeItem('remembered_email');
+        }
+        
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('token_type', data.token_type);
         localStorage.setItem('user_email', data.email);
@@ -49,6 +71,35 @@ export default function Login() {
       console.error(err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setResetMessage('');
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: resetEmail,
+        }),
+      });
+
+      if (response.ok) {
+        setResetMessage('Password reset link has been sent to your email!');
+      } else {
+        const errorData = await response.json();
+        setResetMessage(errorData.error || 'Failed to send reset link');
+      }
+    } catch (err) {
+      setResetMessage('Unable to connect to server.');
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -144,10 +195,21 @@ export default function Login() {
 
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" />
+                  <input 
+                    type="checkbox" 
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" 
+                  />
                   <span className="text-sm text-gray-600">Remember me</span>
                 </label>
-                <a href="#" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Forgot password?</a>
+                <button 
+                  type="button"
+                  onClick={() => setShowForgotModal(true)}
+                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium bg-transparent border-none cursor-pointer"
+                >
+                  Forgot password?
+                </button>
               </div>
 
               <button
@@ -184,6 +246,62 @@ export default function Login() {
           </p>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">Reset Password</h3>
+              <button 
+                onClick={() => {
+                  setShowForgotModal(false);
+                  setResetMessage('');
+                  setResetEmail('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <p className="text-gray-600 mb-4">
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+            
+            {resetMessage && (
+              <div className={`mb-4 p-3 rounded-lg text-sm ${
+                resetMessage.includes('sent') 
+                  ? 'bg-green-50 text-green-600 border border-green-200' 
+                  : 'bg-red-50 text-red-600 border border-red-200'
+              }`}>
+                {resetMessage}
+              </div>
+            )}
+            
+            <form onSubmit={handleForgotPassword}>
+              <input
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none mb-4"
+                required
+              />
+              
+              <button
+                type="submit"
+                disabled={resetLoading}
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50"
+              >
+                {resetLoading ? 'Sending...' : 'Send Reset Link'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

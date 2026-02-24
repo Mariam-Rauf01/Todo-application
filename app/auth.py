@@ -153,6 +153,48 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             detail=f"Login failed: {str(e)}"
         )
 
+@router.post("/forgot-password")
+def forgot_password(request: dict, db: Session = Depends(get_db)):
+    """
+    Handle forgot password request
+    In a real application, this would:
+    1. Check if the email exists
+    2. Generate a password reset token
+    3. Send an email with the reset link
+    """
+    try:
+        email = request.get('email')
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is required"
+            )
+        
+        # Check if user exists
+        user = db.query(models.User).filter(
+            models.User.email == email
+        ).first()
+        
+        if not user:
+            # Don't reveal whether the email exists or not for security
+            return {"message": "If the email exists, a reset link will be sent"}
+        
+        # In a real application, you would:
+        # 1. Generate a unique token
+        # 2. Store the token in the database with expiration
+        # 3. Send an email with the reset link
+        
+        logger.info(f"Password reset requested for email: {email}")
+        
+        # For now, return success
+        return {"message": "Password reset link has been sent to your email!"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in forgot password: {e}")
+        raise HTTPException(status_code=500, detail="An error occurred")
+
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
