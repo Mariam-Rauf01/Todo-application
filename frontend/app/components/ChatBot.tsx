@@ -1746,7 +1746,38 @@ Any other questions? 😊`;
                   <button onClick={() => {
                     const helpMsg: Message = {
                       id: getUniqueMessageId(),
-                      text: "👋 Hello! Welcome to TaskMate AI! 😄\n\nI'm your personal task manager assistant.\n\nHow can I help you today?\n\nHere's what I can do:\n✅ Add tasks\n✅ View all tasks\n✅ Complete tasks\n✅ Delete tasks\n✅ Update tasks\n✅ Mark tasks as pending\n\nTry saying:\n• \"Add task: Buy groceries\"\n• \"Show my tasks\"\n• \"Complete task 1\"\n• \"Delete task 2\"",
+                      text: "🌐 Bilingual Help Guide / Roman Urdu Mein madad:\n\n" +
+                        "🇬🇧 English:\n" +
+                        "✅ I can help you with:\n" +
+                        "• Add tasks\n" +
+                        "• View all tasks\n" +
+                        "• Complete tasks\n" +
+                        "• Delete tasks\n" +
+                        "• Update tasks\n" +
+                        "• Mark tasks as pending\n\n" +
+                        "Examples:\n" +
+                        "• \"Add task: Buy groceries\"\n" +
+                        "• \"Show my tasks\"\n" +
+                        "• \"Complete task 1\"\n" +
+                        "• \"Delete task 2\"\n" +
+                        "• \"Update task 1 to New title\"\n" +
+                        "• \"Task 1 incomplete\"\n\n" +
+                        "🇵🇰 Roman Urdu:\n" +
+                        "✅ Mein aapki in cheezon mein madad kar sakta hoon:\n" +
+                        "• Tasks add karna\n" +
+                        "• Tasks dekhna\n" +
+                        "• Tasks complete karna\n" +
+                        "• Tasks delete karna\n" +
+                        "• Tasks update karna\n" +
+                        "• Tasks incomplete karna\n\n" +
+                        "Examples:\n" +
+                        "• \"Add task: Groceries le aana\"\n" +
+                        "• \"Meri sari tasks dikhao\"\n" +
+                        "• \"Task 1 complete kar do\"\n" +
+                        "• \"Task 2 delete kar do\"\n" +
+                        "• \"Update task 1 to New title\"\n" +
+                        "• \"Task 1 incomplete\"\n\n" +
+                        "Kya karna chahte hain? 😊",
                       sender: 'bot',
                       timestamp: new Date()
                     };
@@ -1902,7 +1933,38 @@ Any other questions? 😊`;
               <button onClick={() => {
                 const helpMsg: Message = {
                   id: getUniqueMessageId(),
-                  text: "👋 Hello! Welcome to TaskMate AI! 😄\n\nI'm your personal task manager assistant.\n\nHow can I help you today?\n\nHere's what I can do:\n✅ Add tasks\n✅ View all tasks\n✅ Complete tasks\n✅ Delete tasks\n✅ Update tasks\n✅ Mark tasks as pending\n\nTry saying:\n• \"Add task: Buy groceries\"\n• \"Show my tasks\"\n• \"Complete task 1\"\n• \"Delete task 2\"",
+                  text: "🌐 Bilingual Help Guide / Roman Urdu Mein madad:\n\n" +
+                    "🇬🇧 English:\n" +
+                    "✅ I can help you with:\n" +
+                    "• Add tasks\n" +
+                    "• View all tasks\n" +
+                    "• Complete tasks\n" +
+                    "• Delete tasks\n" +
+                    "• Update tasks\n" +
+                    "• Mark tasks as pending\n\n" +
+                    "Examples:\n" +
+                    "• \"Add task: Buy groceries\"\n" +
+                    "• \"Show my tasks\"\n" +
+                    "• \"Complete task 1\"\n" +
+                    "• \"Delete task 2\"\n" +
+                    "• \"Update task 1 to New title\"\n" +
+                    "• \"Task 1 incomplete\"\n\n" +
+                    "🇵🇰 Roman Urdu:\n" +
+                    "✅ Mein aapki in cheezon mein madad kar sakta hoon:\n" +
+                    "• Tasks add karna\n" +
+                    "• Tasks dekhna\n" +
+                    "• Tasks complete karna\n" +
+                    "• Tasks delete karna\n" +
+                    "• Tasks update karna\n" +
+                    "• Tasks incomplete karna\n\n" +
+                    "Examples:\n" +
+                    "• \"Add task: Groceries le aana\"\n" +
+                    "• \"Meri sari tasks dikhao\"\n" +
+                    "• \"Task 1 complete kar do\"\n" +
+                    "• \"Task 2 delete kar do\"\n" +
+                    "• \"Update task 1 to New title\"\n" +
+                    "• \"Task 1 incomplete\"\n\n" +
+                    "Kya karna chahte hain? 😊",
                   sender: 'bot',
                   timestamp: new Date()
                 };

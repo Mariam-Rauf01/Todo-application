@@ -784,7 +784,7 @@ export default function TasksPage() {
                           value={newTask.title}
                           onChange={e => setNewTask({...newTask, title: e.target.value})}
                           placeholder="What needs to be done?"
-                          className="w-full px-4 py-3 bg-white border border-violet-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 bg-white border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
                         />
                       </div>
                       <div>
@@ -796,7 +796,7 @@ export default function TasksPage() {
                           onChange={e => setNewTask({...newTask, description: e.target.value})}
                           placeholder="Add more details..."
                           rows={2}
-                          className="w-full px-4 py-3 bg-white border border-violet-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-none"
+                          className="w-full px-4 py-3 bg-white border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-none outline-none"
                         />
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -808,7 +808,7 @@ export default function TasksPage() {
                             type="date"
                             value={newTask.due_date}
                             onChange={e => setNewTask({...newTask, due_date: e.target.value})}
-                            className="w-full px-4 py-3 bg-white border border-violet-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                            className="w-full px-4 py-3 bg-white border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
                           />
                         </div>
                         <div>
@@ -818,7 +818,7 @@ export default function TasksPage() {
                           <select
                             value={newTask.priority}
                             onChange={e => setNewTask({...newTask, priority: e.target.value as any})}
-                            className="w-full px-4 py-3 bg-white border border-violet-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                            className="w-full px-4 py-3 bg-white border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
                           >
                             <option value="low">🌿 Low</option>
                             <option value="medium">⚡ Medium</option>
@@ -833,7 +833,7 @@ export default function TasksPage() {
                             value={newTask.category}
                             onChange={e => setNewTask({...newTask, category: e.target.value})}
                             placeholder="e.g., Work"
-                            className="w-full px-4 py-3 bg-white border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                            className="w-full px-4 py-3 bg-white border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
                           />
                         </div>
                       </div>
@@ -1010,7 +1010,7 @@ export default function TasksPage() {
                     value={newCategory}
                     onChange={e => setNewCategory(e.target.value)}
                     placeholder="New category..."
-                    className="flex-1 px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all text-sm"
+                    className="flex-1 px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all text-sm outline-none"
                     onKeyPress={e => e.key === 'Enter' && addCategory()}
                   />
                   <button
@@ -1090,7 +1090,7 @@ export default function TasksPage() {
                   type="text"
                   value={editForm.title}
                   onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
                   required
                 />
               </div>
@@ -1102,7 +1102,7 @@ export default function TasksPage() {
                 <textarea
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-none"
+                  className="w-full px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all resize-none outline-none"
                   rows={3}
                 />
               </div>
@@ -1115,7 +1115,7 @@ export default function TasksPage() {
                   <select
                     value={editForm.priority}
                     onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
                   >
                     <option value="low">🌿 Low</option>
                     <option value="medium">⚡ Medium</option>
@@ -1131,7 +1131,7 @@ export default function TasksPage() {
                     type="date"
                     value={editForm.due_date}
                     onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
                   />
                 </div>
               </div>
@@ -1145,7 +1145,7 @@ export default function TasksPage() {
                   value={editForm.category}
                   onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
                   placeholder="e.g., Work, Personal"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all outline-none"
                 />
               </div>
 
