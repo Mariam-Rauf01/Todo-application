@@ -309,39 +309,37 @@ export default function ChatBot() {
 
 🇬🇧 English:
 ✅ I can help you with:
-• Add tasks
-• View all tasks  
-• Complete tasks
-• Delete tasks
-• Update tasks
-• Mark tasks as pending
-• Mark tasks as incomplete
+• Add tasks - "Add task: Buy groceries"
+• View all tasks - "Show my tasks"  
+• Complete tasks - "Complete shopping" or "complete task 1"
+• Mark tasks as incomplete - "incomplete shopping" or "pending shopping"
+• Delete tasks - "Delete shopping" or "delete task 2"
+• Update tasks - "Update shopping to new title"
 
-📝 Examples - Try these commands:
-• "Add task: Buy groceries"
-• "Show my tasks"
-• "Complete task 1" or "complete shopping"
-• "Delete task 2" or "delete shopping"
-• "Update task 1 to New title" or "update shopping to groceries"
-• "Task 1 incomplete" or "mark shopping as pending"
+📌 Quick Commands:
+• "Add task: [title]" - Create new task
+• "Show tasks" - View all your tasks
+• "Complete [name]" - Mark as done
+• "Incomplete [name]" - Mark as pending
+• "Delete [name]" - Remove task
+• "Update [name] to [new title]" - Change task name
 
 🇵🇰 Roman Urdu:
 ✅ Mein aapki in cheezon mein madad kar sakta hoon:
-• Tasks add karna
-• Tasks dekhna
-• Tasks complete karna
-• Tasks delete karna
-• Tasks update karna
-• Tasks incomplete karna
-• Tasks pending karna
+• Tasks add karna - "Add task: Groceries le aana"
+• Tasks dekhna - "Meri tasks dikhao"
+• Tasks complete karna - "shopping complete kar do"
+• Tasks incomplete karna - "incomplete shopping" ya "pending shopping"
+• Tasks delete karna - "shopping delete kar do"
+• Tasks update karna - "shopping ko new name se badlo"
 
-📝 Examples - Ye commands try karein:
-• "Add task: Groceries le aana"
-• "Meri sari tasks dikhao"
-• "Task 1 complete kar do" ya "shopping complete kar do"
-• "Task 2 delete kar do" ya "shopping delete kar do"
-• "Update task 1 to New title" ya "shopping ko groceries mein badlo"
-• "Task 1 incomplete kar do" ya "shopping ko pending karo"
+📌 Jaldi ke Commands:
+• "Add task: [title]" - Naya task banayein
+• "Show tasks" - Apni tasks dekhain
+• "Complete [name]" - Task complete karein
+• "Incomplete [name]" - Task pending karein
+• "Delete [name]" - Task hataein
+• "Update [name] to [new title]" - Task ka naam badlein
 
 Kya karna chahte hain? 😊`;
     }
@@ -1517,7 +1515,9 @@ Any other questions? 😊`;
       lowerMsg.includes('pending karo') ||
       lowerMsg.includes('incomplete karo') ||
       lowerMsg.includes('phir se pending') ||
-      lowerMsg.includes('wapas pending');
+      lowerMsg.includes('wapas pending') ||
+      lowerMsg.includes('pending banao') ||
+      lowerMsg.includes('incomplete banao');
 
     // Try to mark task as incomplete
     if (isTaskIncompleteRequest) {
@@ -1536,34 +1536,57 @@ Any other questions? 😊`;
             const allTasks = await tasksRes.json();
             const completedTasks = allTasks.filter((t: any) => t.status === 'completed');
             
-            // Try to find task by number
-            const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || 
-                               messageToSend.match(/(\d+)/);
-            
             let taskToIncomplete = null;
             
-            if (taskIdMatch) {
-              // Find by number
-              const taskIndex = parseInt(taskIdMatch[1]) - 1;
-              if (completedTasks[taskIndex]) {
-                taskToIncomplete = completedTasks[taskIndex];
-              }
-            } else {
-              // Try to find by task name - require at least 3 characters
-              const taskNameMatch = messageToSend.replace(/incomplete task:?/i, '')
-                .replace(/uncomplete task:?/i, '')
-                .replace(/mark incomplete:?/i, '')
-                .replace(/mark uncomplete:?/i, '')
-                .replace(/pending task:?/i, '')
-                .replace(/task incomplete:?/i, '')
-                .replace(/make incomplete:?/i, '')
-                .replace(/please/i, '')
-                .replace(/can you/i, '')
-                .trim();
+            // Extract task name from message - more comprehensive extraction
+            let taskNameMatch = messageToSend
+              .replace(/incomplete task:?/i, '')
+              .replace(/uncomplete task:?/i, '')
+              .replace(/mark incomplete:?/i, '')
+              .replace(/mark uncomplete:?/i, '')
+              .replace(/pending task:?/i, '')
+              .replace(/task incomplete:?/i, '')
+              .replace(/task uncomplete:?/i, '')
+              .replace(/make incomplete:?/i, '')
+              .replace(/mark as pending:?/i, '')
+              .replace(/not done:?/i, '')
+              .replace(/revert:?/i, '')
+              .replace(/undo:?/i, '')
+              // Roman Urdu patterns
+              .replace(/pending karo:?/i, '')
+              .replace(/incomplete karo:?/i, '')
+              .replace(/phir se pending:?/i, '')
+              .replace(/wapas pending:?/i, '')
+              .replace(/pending banao:?/i, '')
+              .replace(/incomplete banao:?/i, '')
+              .replace(/please/i, '')
+              .replace(/can you/i, '')
+              .replace(/i want to/i, '')
+              .replace(/make this/i, '')
+              .replace(/set this/i, '')
+              .replace(/mark this/i, '')
+              .replace(/task number/i, '')
+              .replace(/task/i, '')
+              .trim();
+            
+            // Try to find task by name (more flexible matching)
+            if (taskNameMatch && taskNameMatch.length >= 1) {
+              // First try exact match
+              taskToIncomplete = completedTasks.find((t: any) => 
+                t.title.toLowerCase() === taskNameMatch.toLowerCase()
+              );
               
-              if (taskNameMatch && taskNameMatch.length >= 3) {
+              // Then try contains match
+              if (!taskToIncomplete) {
                 taskToIncomplete = completedTasks.find((t: any) => 
-                  t.title.toLowerCase() === taskNameMatch.toLowerCase() ||
+                  t.title.toLowerCase().includes(taskNameMatch.toLowerCase()) ||
+                  taskNameMatch.toLowerCase().includes(t.title.toLowerCase())
+                );
+              }
+              
+              // Then try starts with
+              if (!taskToIncomplete) {
+                taskToIncomplete = completedTasks.find((t: any) => 
                   t.title.toLowerCase().startsWith(taskNameMatch.toLowerCase())
                 );
               }
@@ -1614,6 +1637,9 @@ Any other questions? 😊`;
                 if (completedTasks.length > 5) {
                   taskList += isUrdu ? "... aur bhi hain" : "... and more";
                 }
+                taskList += isUrdu 
+                  ? "\n\n📝 Task incomplete karne ke liye: 'incomplete shopping' ya 'Task 1 incomplete'" 
+                  : "\n\n📝 To mark incomplete: 'incomplete shopping' or 'Task 1 incomplete'";
                 taskActionResult = taskList;
               } else {
                 taskActionResult = isUrdu
