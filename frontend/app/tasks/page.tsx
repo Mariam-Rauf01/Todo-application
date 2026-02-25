@@ -93,6 +93,7 @@ export default function TasksPage() {
   const [successAction, setSuccessAction] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{type: 'task' | 'category', id?: number, name?: string} | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const taskInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -494,22 +495,36 @@ export default function TasksPage() {
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg shadow-purple-500/30 transform hover:scale-105 transition-transform">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-20">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center text-white text-xl sm:text-3xl shadow-lg shadow-purple-500/30 transform hover:scale-105 transition-transform">
                 📝
               </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+              <div className="hidden sm:block">
+                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
                   TaskMate
                 </h1>
-                <p className="text-sm text-gray-500">Organize, Focus, Deliver ✨</p>
+                <p className="text-xs sm:text-sm text-gray-500">Organize, Focus, Deliver ✨</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-violet-50 to-purple-50 rounded-full border border-violet-100">
+            <div className="flex items-center gap-2 sm:gap-4">
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="sm:hidden p-2 rounded-lg hover:bg-gray-100"
+              >
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {mobileMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+              </button>
+
+              <div className={`${mobileMenuOpen ? 'absolute top-16 left-0 right-0 bg-white shadow-lg p-4 z-50' : 'hidden'} sm:flex sm:items-center sm:gap-3 px-2 sm:px-4 py-2 bg-gradient-to-r from-violet-50 to-purple-50 rounded-full border border-violet-100`}>
                 <div className="relative">
                   {/* Profile Dropdown */}
                   <div className="relative profile-dropdown">
@@ -617,9 +632,9 @@ export default function TasksPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8 relative z-10">
         {/* Progress Section */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-6 mb-8 border border-white/20">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-6 mb-6 sm:mb-8 border border-white/20">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg shadow-purple-500/30">
@@ -698,9 +713,9 @@ export default function TasksPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Tasks Card */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-xl border border-white/20 overflow-hidden">
               {/* Card Header */}
-              <div className="bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 p-6">
+              <div className="bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl">📋</div>
@@ -763,7 +778,7 @@ export default function TasksPage() {
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {error && (
                   <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 flex items-center gap-2">
                     <span className="text-xl">⚠️</span>
@@ -889,7 +904,7 @@ export default function TasksPage() {
                       return (
                         <div
                           key={task.id}
-                          className={`group relative p-5 bg-white rounded-2xl border-2 shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ${
+                          className={`group relative p-3 sm:p-5 bg-white rounded-xl sm:rounded-2xl border-2 shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 ${
                             task.status === 'completed' 
                               ? 'border-green-200 bg-gradient-to-r from-white to-green-50/50' 
                               : 'border-transparent hover:border-violet-200'

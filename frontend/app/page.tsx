@@ -55,7 +55,7 @@ export default function Home() {
             <span className="text-sm text-violet-700 font-medium">Powered by AI ✨</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-4 sm:mb-6 leading-tight">
             <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
               Manage Tasks
             </span>
@@ -83,7 +83,7 @@ export default function Home() {
           </div>
 
           {/* Stats */}
-          <div className="flex justify-center gap-12 mt-16">
+          <div className="flex flex-wrap justify-center gap-6 sm:gap-12 mt-12 sm:mt-16">
             <div className="text-center">
               <div className="text-4xl font-bold text-violet-600">10K+</div>
               <div className="text-gray-500">Tasks Managed</div>
