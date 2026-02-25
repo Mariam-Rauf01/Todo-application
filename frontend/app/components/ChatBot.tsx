@@ -1011,28 +1011,14 @@ Any other questions? 😊`;
               new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             );
             
-            // Try to extract task by number first
-            const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || messageToSend.match(/(\d+)/);
+            // Try to extract task by number first - ONLY if number is at the start
+            const taskIdMatch = messageToSend.match(/^(?:task\s*#?)?(\d+)/i);
             
             let taskToUpdate = null;
             let newTitle = '';
             
-            if (taskIdMatch) {
-              // Find by number
-              const taskIndex = parseInt(taskIdMatch[1]) - 1;
-              if (sortedTasks[taskIndex]) {
-                taskToUpdate = sortedTasks[taskIndex];
-                // Get new title
-                newTitle = messageToSend
-                  .replace(/update task:?\s*#?\d+/i, '')
-                  .replace(/edit task:?\s*#?\d+/i, '')
-                  .replace(/change task:?\s*#?\d+/i, '')
-                  .replace(/modify task:?\s*#?\d+/i, '')
-                  .replace(/to/i, '')
-                  .replace(/:/i, '')
-                  .trim();
-              }
-            } else {
+            // First try to find by task name directly (more natural: "update shopping to groceries")
+            if (!taskIdMatch) {
               // Try to find by name pattern: "update task eat to drink" or "task update karo shopping se washing"
               // Look for pattern: update task [old name] to [new name]
               const updatePattern = messageToSend
@@ -1076,8 +1062,31 @@ Any other questions? 😊`;
                   t.title.toLowerCase().includes(oldName.toLowerCase())
                 );
               } else if (updatePattern.trim()) {
-                // Just update title directly if only one part
-                newTitle = updatePattern.trim();
+                // Just update title directly if only one part - but find the task first
+                // If user says "update shopping to groceries", try to find "shopping"
+                const possibleOldName = updatePattern.trim();
+                taskToUpdate = sortedTasks.find((t: any) => 
+                  t.title.toLowerCase().includes(possibleOldName.toLowerCase())
+                );
+                if (taskToUpdate) {
+                  // If task found by name, we need new title - ask user
+                  newTitle = '';
+                }
+              }
+            } else {
+              // Find by number
+              const taskIndex = parseInt(taskIdMatch[1]) - 1;
+              if (sortedTasks[taskIndex]) {
+                taskToUpdate = sortedTasks[taskIndex];
+                // Get new title
+                newTitle = messageToSend
+                  .replace(/update task:?\s*#?\d+/i, '')
+                  .replace(/edit task:?\s*#?\d+/i, '')
+                  .replace(/change task:?\s*#?\d+/i, '')
+                  .replace(/modify task:?\s*#?\d+/i, '')
+                  .replace(/to/i, '')
+                  .replace(/:/i, '')
+                  .trim();
               }
             }
             
@@ -1369,20 +1378,15 @@ Any other questions? 😊`;
             const completedTasks = allTasks.filter((t: any) => t.status === 'completed');
             const sortedAllTasks = [...pendingTasks, ...completedTasks];
             
-            // Try to find task by number first
-            const taskIdMatch = messageToSend.match(/task\s*#?(\d+)/i) || 
-                               messageToSend.match(/(\d+)/);
+            // Try to find task by number first - ONLY if number is at the start
+            const taskIdMatch = messageToSend.match(/^(?:task\s*#?)?(\d+)/i) || 
+                               messageToSend.match(/^(?:delete|remove)\s+(\d+)/i);
             
             let taskToDelete = null;
             
-            if (taskIdMatch) {
-              // Find by number
-              const taskIndex = parseInt(taskIdMatch[1]) - 1;
-              if (sortedAllTasks[taskIndex]) {
-                taskToDelete = sortedAllTasks[taskIndex];
-              }
-            } else {
-              // Try to find by task name - but require at least 3 characters
+            // First try to find by task name (more natural: "delete shopping" -> delete task "shopping")
+            if (!taskIdMatch) {
+              // Try to find by task name - extract the task name from the message
               const taskNameMatch = messageToSend.replace(/delete task:?/i, '')
                 .replace(/remove task:?/i, '')
                 .replace(/task delete:?/i, '')
@@ -1391,12 +1395,18 @@ Any other questions? 😊`;
                 .replace(/can you/i, '')
                 .trim();
               
-              if (taskNameMatch && taskNameMatch.length >= 3) {
+              if (taskNameMatch && taskNameMatch.length >= 1) {
                 // Find task by name (exact or close match)
                 taskToDelete = sortedAllTasks.find((t: any) => 
                   t.title.toLowerCase() === taskNameMatch.toLowerCase() ||
-                  t.title.toLowerCase().startsWith(taskNameMatch.toLowerCase())
+                  t.title.toLowerCase().includes(taskNameMatch.toLowerCase())
                 );
+              }
+            } else {
+              // Find by number
+              const taskIndex = parseInt(taskIdMatch[1]) - 1;
+              if (sortedAllTasks[taskIndex]) {
+                taskToDelete = sortedAllTasks[taskIndex];
               }
             }
             
