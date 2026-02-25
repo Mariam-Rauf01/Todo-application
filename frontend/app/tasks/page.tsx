@@ -356,8 +356,8 @@ export default function TasksPage() {
       setTimeout(() => {
         setShowSuccessModal(false);
         setIsSuccessFading(false);
-      }, 300);
-    }, 3000);
+      }, 350);
+    }, 2500);
   };
 
   const removeCategory = (categoryToRemove: string) => {
@@ -426,8 +426,8 @@ export default function TasksPage() {
 
       {/* Modern Toast Notification */}
       {showSuccessModal && (
-        <div className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-50 ${isSuccessFading ? 'animate-fade-out' : 'animate-slide-down'}`}>
-          <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+        <div className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-50 toast-container ${isSuccessFading ? 'animate-fade-out' : 'animate-slide-down'}`}>
+          <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform transition-transform duration-300 hover:scale-105">
             <span className="text-xl">✓</span>
             <span className="font-medium">{successMessage}</span>
           </div>
