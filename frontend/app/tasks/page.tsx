@@ -89,6 +89,7 @@ export default function TasksPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isSuccessFading, setIsSuccessFading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [successAction, setSuccessAction] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{type: 'task' | 'category', id?: number, name?: string} | null>(null);
@@ -261,16 +262,10 @@ export default function TasksPage() {
       setTasks(prev => prev.map(t => t.id === id ? updated : t));
       if (updates.status === 'completed') {
         showSuccess('Task completed! Great job! 🎉', 'completed');
-        // Dispatch event to update chatbot
-        window.dispatchEvent(new CustomEvent('task-action', {
-          detail: { action: 'completed', taskTitle: updated.title }
-        }));
+        // Don't dispatch event - chatbot handles its own messages
       } else {
         showSuccess('Task updated successfully!', 'updated');
-        // Dispatch event to update chatbot
-        window.dispatchEvent(new CustomEvent('task-action', {
-          detail: { action: 'updated', taskTitle: updated.title }
-        }));
+        // Don't dispatch event - chatbot handles its own messages
       }
     } catch (err) {
       setError('Failed to update task');
@@ -294,6 +289,14 @@ export default function TasksPage() {
       setSuccessMessage('Profile picture removed successfully');
       setSuccessAction('removed');
       setShowSuccessModal(true);
+      setIsSuccessFading(false);
+      setTimeout(() => {
+        setIsSuccessFading(true);
+        setTimeout(() => {
+          setShowSuccessModal(false);
+          setIsSuccessFading(false);
+        }, 300);
+      }, 3000);
       return;
     }
     
@@ -316,10 +319,7 @@ export default function TasksPage() {
         setTasks(prev => prev.filter(t => t.id !== deleteTarget.id));
         showSuccess('Task deleted successfully!', 'deleted');
         
-        // Dispatch event to update chatbot
-        window.dispatchEvent(new CustomEvent('task-action', {
-          detail: { action: 'deleted', taskTitle: deletedTaskTitle }
-        }));
+        // Don't dispatch event - chatbot handles its own messages
         
       } catch (err) {
         console.error('Delete error:', err);
@@ -328,10 +328,7 @@ export default function TasksPage() {
         setTasks(prev => prev.filter(t => t.id !== deleteTarget.id));
         showSuccess('Task deleted successfully!', 'deleted');
         
-        // Dispatch event to update chatbot
-        window.dispatchEvent(new CustomEvent('task-action', {
-          detail: { action: 'deleted', taskTitle: deletedTaskTitle }
-        }));
+        // Don't dispatch event - chatbot handles its own messages
       }
     } else if (deleteTarget.type === 'category' && deleteTarget.name) {
       saveCategories(categories.filter(c => c !== deleteTarget.name));
@@ -353,7 +350,14 @@ export default function TasksPage() {
     setSuccessMessage(message);
     setSuccessAction(action);
     setShowSuccessModal(true);
-    setTimeout(() => setShowSuccessModal(false), 3000);
+    setIsSuccessFading(false);
+    setTimeout(() => {
+      setIsSuccessFading(true);
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        setIsSuccessFading(false);
+      }, 300);
+    }, 3000);
   };
 
   const removeCategory = (categoryToRemove: string) => {
@@ -422,7 +426,7 @@ export default function TasksPage() {
 
       {/* Modern Toast Notification */}
       {showSuccessModal && (
-        <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 animate-slide-down">
+        <div className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-50 ${isSuccessFading ? 'animate-fade-out' : 'animate-slide-down'}`}>
           <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3">
             <span className="text-xl">✓</span>
             <span className="font-medium">{successMessage}</span>

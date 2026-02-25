@@ -94,10 +94,7 @@ export default function TaskList() {
         setTasks(tasks.filter(task => task.id !== id));
         console.log('Task deleted successfully from UI');
         
-        // Dispatch event to update chatbot
-        window.dispatchEvent(new CustomEvent('task-action', {
-          detail: { action: 'deleted', taskTitle: deletedTaskTitle }
-        }));
+        // Don't dispatch event - chatbot handles its own messages
       } else {
         setError('Failed to delete task');
         console.error('Delete failed with status:', response.status);
@@ -138,12 +135,10 @@ export default function TaskList() {
         setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
         console.log('Task status updated successfully');
         
-        // Dispatch event to update chatbot
+        // Don't dispatch event - chatbot handles its own messages
         const newStatus = task.status === 'completed' ? 'pending' : 'completed';
         if (newStatus === 'completed') {
-          window.dispatchEvent(new CustomEvent('task-action', {
-            detail: { action: 'completed', taskTitle: task.title }
-          }));
+          // Don't dispatch event - chatbot handles its own messages
         }
       } else {
         console.error('Failed to update task status, status:', response.status);

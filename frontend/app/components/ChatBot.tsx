@@ -219,11 +219,12 @@ export default function ChatBot() {
     }
   }, []);
 
-  // Listen for task-action events
+  // Listen for task-action events - ONLY from chatbot
   useEffect(() => {
     const handleTaskAction = (event: Event) => {
       const customEvent = event as CustomEvent;
-      if (customEvent.detail) {
+      // Only respond to events from chatbot, not from form
+      if (customEvent.detail && customEvent.detail.source === 'chatbot') {
         const botMessage: Message = {
           id: getUniqueMessageId(),
           text: customEvent.detail.message || 'Your task list has been updated!',
@@ -309,19 +310,20 @@ export default function ChatBot() {
 🇬🇧 English:
 ✅ I can help you with:
 • Add tasks
-• View all tasks
+• View all tasks  
 • Complete tasks
 • Delete tasks
 • Update tasks
 • Mark tasks as pending
+• Mark tasks as incomplete
 
-Examples:
+📝 Examples - Try these commands:
 • "Add task: Buy groceries"
 • "Show my tasks"
-• "Complete task 1"
-• "Delete task 2"
-• "Update task 1 to New title"
-• "Task 1 incomplete"
+• "Complete task 1" or "complete shopping"
+• "Delete task 2" or "delete shopping"
+• "Update task 1 to New title" or "update shopping to groceries"
+• "Task 1 incomplete" or "mark shopping as pending"
 
 🇵🇰 Roman Urdu:
 ✅ Mein aapki in cheezon mein madad kar sakta hoon:
@@ -331,14 +333,15 @@ Examples:
 • Tasks delete karna
 • Tasks update karna
 • Tasks incomplete karna
+• Tasks pending karna
 
-Examples:
+📝 Examples - Ye commands try karein:
 • "Add task: Groceries le aana"
 • "Meri sari tasks dikhao"
-• "Task 1 complete kar do"
-• "Task 2 delete kar do"
-• "Update task 1 to New title"
-• "Task 1 incomplete"
+• "Task 1 complete kar do" ya "shopping complete kar do"
+• "Task 2 delete kar do" ya "shopping delete kar do"
+• "Update task 1 to New title" ya "shopping ko groceries mein badlo"
+• "Task 1 incomplete kar do" ya "shopping ko pending karo"
 
 Kya karna chahte hain? 😊`;
     }
@@ -870,7 +873,7 @@ Any other questions? 😊`;
       lowerMsg.includes('new task') ||
       lowerMsg.includes('task banao');
 
-    // Check if user wants to complete a task
+    // Check if user wants to complete a task - MORE HUMAN LIKE
     const isTaskCompleteRequest = 
       lowerMsg.includes('complete task') ||
       lowerMsg.includes('done task') ||
@@ -880,24 +883,35 @@ Any other questions? 😊`;
       lowerMsg.includes('task finished') ||
       lowerMsg.includes('mark complete') ||
       lowerMsg.includes('mark done') ||
+      lowerMsg.includes('done') ||
+      lowerMsg.includes('complete') ||
+      lowerMsg.includes('finished') ||
+      // Without "task" keyword - more natural
+      lowerMsg.match(/\b(done|complete|finished)\s+\w+/) ||
       // Roman Urdu
-      lowerMsg.includes('task complete') ||
       lowerMsg.includes('complete karo') ||
-      lowerMsg.includes('task done') ||
       lowerMsg.includes('kar do') ||
-      lowerMsg.includes('task finish');
+      lowerMsg.includes('task finish') ||
+      lowerMsg.includes('ho gaya') ||
+      lowerMsg.includes('ho gya');
 
-    // Check if user wants to delete a task
+    // Check if user wants to delete a task - MORE HUMAN LIKE PATTERNS
     const isTaskDeleteRequest = 
       lowerMsg.includes('delete task') ||
       lowerMsg.includes('remove task') ||
       lowerMsg.includes('task delete') ||
       lowerMsg.includes('task remove') ||
+      lowerMsg.includes('remove') ||
+      lowerMsg.includes('delete') ||
+      lowerMsg.includes('hata do') ||
       // Roman Urdu
-      lowerMsg.includes('task delete') ||
       lowerMsg.includes('delete karo') ||
       lowerMsg.includes('task hata') ||
-      lowerMsg.includes('hata do');
+      lowerMsg.includes('hata do') ||
+      // Natural phrases
+      lowerMsg.includes('get rid of') ||
+      lowerMsg.includes('take off') ||
+      lowerMsg.includes('cross off');
 
     // Check if user wants to see tasks
     const isShowTasksRequest = 
@@ -914,12 +928,19 @@ Any other questions? 😊`;
       lowerMsg.includes('task dikhao') ||
       (lowerMsg.includes('task') && !isTaskAddRequest && !isTaskCompleteRequest && !isTaskDeleteRequest && !lowerMsg.includes('update') && !lowerMsg.includes('edit') && !lowerMsg.includes('change') && !lowerMsg.includes('modify'));
 
-    // Check for update task request
+    // Check for update task request - MORE HUMAN LIKE
     const isTaskUpdateRequest = 
       lowerMsg.includes('update task') ||
       lowerMsg.includes('edit task') ||
       lowerMsg.includes('change task') ||
       lowerMsg.includes('modify task') ||
+      lowerMsg.includes('rename') ||
+      // Without "task" keyword
+      lowerMsg.includes('update') ||
+      lowerMsg.includes('edit') ||
+      lowerMsg.includes('change') ||
+      lowerMsg.includes('modify') ||
+      lowerMsg.includes('rename') ||
       // Roman Urdu patterns
       lowerMsg.includes('task update') ||
       lowerMsg.includes('task badlo') ||
@@ -928,7 +949,8 @@ Any other questions? 😊`;
       lowerMsg.includes('task modify') ||
       lowerMsg.includes('update karo') ||
       lowerMsg.includes('badlo') ||
-      lowerMsg.includes('edit karo');
+      lowerMsg.includes('edit karo') ||
+      lowerMsg.includes('change karo');
 
     // Handle show tasks request - show all tasks with clickable buttons
     if (isShowTasksRequest) {
@@ -1022,17 +1044,16 @@ Any other questions? 😊`;
               // Try to find by name pattern: "update task eat to drink" or "task update karo shopping se washing"
               // Look for pattern: update task [old name] to [new name]
               const updatePattern = messageToSend
-                .replace(/update task:?/i, '')
-                .replace(/edit task:?/i, '')
-                .replace(/change task:?/i, '')
-                .replace(/modify task:?/i, '')
+                // Remove update/edit/change/modify at the start
+                .replace(/^(?:update|edit|change|modify)\s+/i, '')
+                // Remove "task" keywords
+                .replace(/task:?\s*/i, '')
                 // Roman Urdu patterns
-                .replace(/task update karo/i, '')
-                .replace(/task badlo/i, '')
-                .replace(/task edit karo/i, '')
                 .replace(/update karo/i, '')
                 .replace(/badlo/i, '')
                 .replace(/edit karo/i, '')
+                .replace(/change karo/i, '')
+                .replace(/modify karo/i, '')
                 .trim();
               
               // Split by "to" or "se" (urdu) or "ko" (urdu)
@@ -1106,8 +1127,8 @@ Any other questions? 😊`;
                 setIsOpen(true);
                 
                 const taskActionResult = isUrdu
-                  ? `✅ Task update ho gaya! "${taskToUpdate.title}" → "${newTitle}"`
-                  : `✅ Task updated! "${taskToUpdate.title}" → "${newTitle}"`;
+                  ? `✅ Zabardast! "${taskToUpdate.title}" ab "${newTitle}" ho gaya! Badlav mein koi nahi! 😎`
+                  : `✅ Awesome! "${taskToUpdate.title}" is now "${newTitle}"! All updated! 😎`;
                 const botMessage: Message = {
                   id: getUniqueMessageId(),
                   text: taskActionResult,
@@ -1212,8 +1233,8 @@ Any other questions? 😊`;
             
             if (res.ok) {
               taskActionResult = isUrdu 
-                ? `✅ Task "${taskTitle}" successfully created!`
-                : `✅ Task "${taskTitle}" successfully created!`;
+                ? `✅ Zabardast! "${taskTitle}" task add ho gaya! Ab aap isse complete karein! 👍`
+                : `✅ Perfect! "${taskTitle}" has been added to your list! Go crush it! 💪`;
               console.log('✅ Task created from chatbot!');
               
               // Make sure chat is open
@@ -1308,8 +1329,8 @@ Any other questions? 😊`;
               
               if (updateRes.ok) {
                 taskActionResult = isUrdu
-                  ? `✅ Task "${taskToComplete.title}" completed! Great job! 🎉`
-                  : `✅ Task "${taskToComplete.title}" completed! Great job! 🎉`;
+                  ? `✅ Badhai ho! "${taskToComplete.title}" complete ho gaya! Aap kaafi talented hain! 🎉`
+                  : `🎉 Congratulations! "${taskToComplete.title}" is done! You're amazing! 🎉`;
                 console.log('✅ Task completed from chatbot!');
                 
                 // Make sure chat is open to show message
@@ -1379,20 +1400,24 @@ Any other questions? 😊`;
             const sortedAllTasks = [...pendingTasks, ...completedTasks];
             
             // Try to find task by number first - ONLY if number is at the start
+            // Also check for "delete 1" or "remove 1" pattern
             const taskIdMatch = messageToSend.match(/^(?:task\s*#?)?(\d+)/i) || 
                                messageToSend.match(/^(?:delete|remove)\s+(\d+)/i);
             
             let taskToDelete = null;
             
-            // First try to find by task name (more natural: "delete shopping" -> delete task "shopping")
+            // If message contains words like "shopping" or "groceries" without command, try to find that task
+            // This handles natural phrases like "delete shopping" or just "remove groceries"
             if (!taskIdMatch) {
-              // Try to find by task name - extract the task name from the message
-              const taskNameMatch = messageToSend.replace(/delete task:?/i, '')
-                .replace(/remove task:?/i, '')
-                .replace(/task delete:?/i, '')
-                .replace(/task remove:?/i, '')
+              // More comprehensive regex to extract task name from delete/remove commands
+              const taskNameMatch = messageToSend
+                .replace(/^(?:delete|remove)\s+/i, '')  // Remove "delete " or "remove " at start
+                .replace(/task\s+(?:delete|remove):?/i, '')  // Remove "task delete" or "task remove"
+                .replace(/(?:delete|remove)\s+task:?/i, '')  // Remove "delete task" or "remove task"
                 .replace(/please/i, '')
                 .replace(/can you/i, '')
+                .replace(/now/i, '')
+                .replace(/i want to/i, '')
                 .trim();
               
               if (taskNameMatch && taskNameMatch.length >= 1) {
@@ -1418,8 +1443,8 @@ Any other questions? 😊`;
               
               if (deleteRes.ok) {
                 taskActionResult = isUrdu
-                  ? `✅ Task "${taskToDelete.title}" delete ho gaya!`
-                  : `✅ Task "${taskToDelete.title}" has been deleted!`;
+                  ? `✅ Ho gaya! "${taskToDelete.title}" task delete ho gaya! Ab aap iske baare mein tension mat lo! 😄`
+                  : `✅ Done! "${taskToDelete.title}" has been deleted! No worries, I'll remember the rest! 😄`;
                 console.log('✅ Task deleted from chatbot!');
                 
                 // Make sure chat is open to show message
@@ -1469,7 +1494,7 @@ Any other questions? 😊`;
       }
     }
 
-    // Check for incomplete task request
+    // Check for incomplete task request - MORE HUMAN LIKE
     const isTaskIncompleteRequest = 
       lowerMsg.includes('incomplete task') ||
       lowerMsg.includes('uncomplete task') ||
@@ -1478,7 +1503,21 @@ Any other questions? 😊`;
       lowerMsg.includes('pending task') ||
       lowerMsg.includes('task incomplete') ||
       lowerMsg.includes('task uncomplete') ||
-      lowerMsg.includes('make incomplete');
+      lowerMsg.includes('make incomplete') ||
+      // More natural patterns
+      lowerMsg.includes('mark as pending') ||
+      lowerMsg.includes('not done') ||
+      lowerMsg.includes('not yet') ||
+      lowerMsg.includes('still not') ||
+      lowerMsg.includes('revert') ||
+      lowerMsg.includes('undo') ||
+      // Without task keyword
+      lowerMsg.includes('pending') ||
+      // Roman Urdu
+      lowerMsg.includes('pending karo') ||
+      lowerMsg.includes('incomplete karo') ||
+      lowerMsg.includes('phir se pending') ||
+      lowerMsg.includes('wapas pending');
 
     // Try to mark task as incomplete
     if (isTaskIncompleteRequest) {
@@ -1542,8 +1581,8 @@ Any other questions? 😊`;
               
               if (updateRes.ok) {
                 taskActionResult = isUrdu
-                  ? `✅ Task "${taskToIncomplete.title}" ab pending hai!`
-                  : `✅ Task "${taskToIncomplete.title}" marked as pending!`;
+                  ? `✅ Theek hai! "${taskToIncomplete.title}" ab pending hai! Phir se try karein! 👍`
+                  : `✅ No problem! "${taskToIncomplete.title}" is back to pending! You'll get it done! 👍`;
                 console.log('✅ Task marked as incomplete from chatbot!');
                 
                 // Make sure chat is open to show message

@@ -122,18 +122,7 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
       if (response.ok) {
         console.log('Task saved successfully');
         
-        // Dispatch event to update chatbot
-        if (taskId) {
-          // Update case
-          window.dispatchEvent(new CustomEvent('task-action', {
-            detail: { action: 'updated', taskTitle: title }
-          }));
-        } else {
-          // Create case
-          window.dispatchEvent(new CustomEvent('task-action', {
-            detail: { action: 'created', taskTitle: title }
-          }));
-        }
+        // Don't dispatch event - chatbot handles its own messages
         
         router.push('/tasks');
         router.refresh();

@@ -69,10 +69,7 @@ export default function TaskForm({ taskId, initialData }: TaskFormProps) {
 
       if (response.ok) {
         const created = await response.json();
-        // Dispatch event to update chatbot
-        window.dispatchEvent(new CustomEvent('task-action', {
-          detail: { action: 'created', taskTitle: created.title || title }
-        }));
+        // Don't dispatch event - chatbot handles its own messages
         router.push('/tasks');
         router.refresh();
       } else {
